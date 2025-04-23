@@ -1,0 +1,37 @@
+# Entornos virtuales
+venv/
+.env
+.env.*
+
+# Archivos Python compilados
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Archivos temporales y de sistema
+.DS_Store
+Thumbs.db
+
+# Archivos de logs
+*.log
+
+# Archivos de configuración de IDEs
+.vscode/
+.idea/
+*.swp
+
+# Archivos creados por el sistema operativo
+ehthumbs.db
+desktop.ini
+
+# Archivos de paquetes
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Scripts ejecutables
+*.sh~
+
+# Archivos de cache
+.cache/
