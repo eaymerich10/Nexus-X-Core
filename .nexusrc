@@ -1,5 +1,5 @@
 [settings]
-mode = programador
-lang = es
+mode = default
+lang = en
 ai_provider = openai
 

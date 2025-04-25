@@ -2,10 +2,13 @@ import platform
 import subprocess
 from datetime import datetime
 from core.logger import logger
+from config.personality import get_available_modes
 
 VALID_MODES = ["default", "programador", "filosofico"]
 VALID_LANGS = ["es", "en"]
 VALID_PROVIDERS = ["openai", "local"]
+VALID_MODES = get_available_modes()
+
 
 def handle_command(command: str, ctx=None) -> str:
     """
@@ -28,6 +31,7 @@ def handle_command(command: str, ctx=None) -> str:
     elif cmd == "/hello":
         return "Hello! I'm NEXUS-X Core, your personal assistant."
 
+   
     elif cmd == "/modo":
         if not args:
             return f"Please specify a mode. Available modes: {', '.join(VALID_MODES)}"
@@ -39,7 +43,11 @@ def handle_command(command: str, ctx=None) -> str:
             logger.info(f"[config] Mode changed to '{new_mode}'")
             return f"Mode changed to '{new_mode}'."
         return "Error: context not available."
-
+    
+    elif cmd == "/modos":
+        modes = get_available_modes()
+        return f"🧠 Available modes:\n" + "\n".join(f"• {m}" for m in modes)
+    
     elif cmd == "/lang":
         if not args:
             return f"Please specify a language. Available: {', '.join(VALID_LANGS)}"
