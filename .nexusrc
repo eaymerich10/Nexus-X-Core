@@ -1,0 +1,5 @@
+[settings]
+mode = programador
+lang = es
+ai_provider = openai
+
