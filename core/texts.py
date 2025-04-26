@@ -42,8 +42,19 @@ TEXTS = {
     "available_modes": {
         "es": "Modos disponibles:",
         "en": "Available modes:"
+    },
+    "confirm_delete": {
+    "es": "¿Estás seguro de que quieres borrar '{reminder}'? (sí/no)",
+    "en": "Are you sure you want to delete '{reminder}'? (yes/no)"
+    },
+    "confirm_yes_no": {
+    "es": "Por favor responde 'si' o 'no'.",
+    "en": "Please answer 'yes' or 'no'."
+    },
+    "deletion_cancelled": {
+    "es": "❎ Eliminación cancelada.",
+    "en": "❎ Deletion cancelled."
     }
 }
-
 def get_text(key, lang="es") -> str:
     return TEXTS.get(key, {}).get(lang, TEXTS.get(key, {}).get("es", ""))

@@ -1,30 +1,40 @@
-import platform
-import subprocess
-from datetime import datetime
-from core.logger import logger
 from core.texts import get_text
 from config.personality import get_available_modes
+from datetime import datetime
+import platform
+import subprocess
+from core.logger import logger
 
-VALID_MODES = ["default", "programador", "filosofico"]
 VALID_LANGS = ["es", "en"]
 VALID_PROVIDERS = ["openai", "local"]
-VALID_MODES = get_available_modes()
 
-
-def handle_command(command: str, ctx=None) -> str:
+def handle_core_command(cmd, args, ctx):
     """
-    Processes a command string and executes the corresponding action.
+    Handles core commands for the assistant, performing various actions based on the provided command.
 
     Args:
-        command (str): The command string to be processed.
-        ctx (optional): Context object to modify state (mode, language, provider).
+        cmd (str): The command to execute (e.g., "/hello", "/time", "/modo").
+        args (list): A list of arguments associated with the command.
+        ctx (object): The context object containing the current state (e.g., language, mode, provider).
 
     Returns:
-        str: Result of the executed command.
+        str: A response message based on the executed command, or None if the command is not recognized.
+
+    Commands:
+        - "/hello": Returns a greeting message in the current language.
+        - "/time": Returns the current time in HH:MM:SS format.
+        - "/modo": Changes or lists available modes. Requires an argument to set a new mode.
+        - "/lang": Changes or lists available languages. Requires an argument to set a new language.
+        - "/proveedor": Changes or lists available AI providers. Requires an argument to set a new provider.
+        - "/estado": Returns the current state of the system, including mode, language, provider, temperature, and time.
+        - "/reiniciar": Resets the context and logs a manual reset action.
+        - "/modos": Lists all available modes.
+
+    Notes:
+        - The function uses helper functions like `get_text`, `get_available_modes`, and `get_temperature`.
+        - Logging is performed for actions that modify the context (e.g., changing mode, language, or provider).
+        - If `ctx` is None, default values are used for language and other context-dependent operations.
     """
-    tokens = command.split()
-    cmd = tokens[0]
-    args = tokens[1:]
     lang = ctx.get_lang() if ctx else "es"
     VALID_MODES = get_available_modes()
 
@@ -44,7 +54,6 @@ def handle_command(command: str, ctx=None) -> str:
             ctx.set_mode(new_mode)
             logger.info(f"[config] Mode changed to '{new_mode}'")
             return f"{get_text('mode_changed', lang)} '{new_mode}'."
-        return "Error: context not available."
 
     elif cmd == "/lang":
         if not args:
@@ -56,7 +65,6 @@ def handle_command(command: str, ctx=None) -> str:
             ctx.set_lang(new_lang)
             logger.info(f"[config] Language changed to '{new_lang}'")
             return f"{get_text('language_changed', new_lang)} '{new_lang}'."
-        return "Error: context not available."
 
     elif cmd == "/proveedor":
         if not args:
@@ -68,7 +76,6 @@ def handle_command(command: str, ctx=None) -> str:
             ctx.set_provider(provider)
             logger.info(f"[config] AI provider changed to '{provider}'")
             return f"{get_text('provider_changed', lang)} '{provider}'."
-        return "Error: context not available."
 
     elif cmd == "/estado":
         if ctx:
@@ -81,21 +88,17 @@ def handle_command(command: str, ctx=None) -> str:
                 f"🌡️ Temperature: {temperature}\n"
                 f"🕓 Time: {datetime.now().strftime('%H:%M:%S')}"
             )
-        return "Error: context not available."
 
     elif cmd == "/reiniciar":
         if ctx:
             ctx.reset()
             logger.info("[system] NEXUS-X Core reiniciado manualmente por el usuario")
             return get_text("reiniciar", lang)
-        return "Error: context not available."
 
     elif cmd == "/modos":
-        modes = get_available_modes()
-        return f"🧠 {get_text('available_modes', lang)}\n" + "\n".join(f"• {m}" for m in modes)
+        return f"🧠 {get_text('available_modes', lang)}\n" + "\n".join(f"• {m}" for m in VALID_MODES)
 
-    else:
-        return "Unknown command. Try /modo, /lang, /proveedor, /estado, /reiniciar, /modos, /time or /hello."
+    return None  # No comando core
 
 def get_temperature() -> str:
     try:
