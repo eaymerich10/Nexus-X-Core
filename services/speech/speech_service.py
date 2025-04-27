@@ -25,13 +25,16 @@ class SpeechService:
             subprocess.run([
                 "sox",
                 "-t", "alsa", device_to_use,
-                "debug_audio.wav",   # <--- Cambiar para guardar el audio de depuración
-                "rate", "44100",
+                "-c", "1",           # Mono
+                "-b", "16",          # 16 bits
+                "-r", "44100",       # 44100 Hz
+                "debug_audio.wav",
                 "silence", "1", "0.1", "1%", "1", "1.5", "1%"
             ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=self.duration + 5)
             print("🎙️ [DEBUG] Grabación terminada (detectó silencio o timeout).")
         except subprocess.TimeoutExpired:
             print("⏱️ [DEBUG] Grabación cortada automáticamente por timeout.")
+
 
 
 
