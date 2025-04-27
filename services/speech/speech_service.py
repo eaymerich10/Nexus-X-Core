@@ -40,28 +40,20 @@ class SpeechService:
         ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         print("🎛️ [DEBUG] Resampleo terminado.")
 
-    def transcribe_audio(self):
-        """Transcribe el audio grabado usando whisper-cli."""
-        print("🧠 [DEBUG] Empezando transcripción...")
-        result = subprocess.run([
-            self.whisper_path,
-            "-m", self.model_path,
-            "-f", self.wav_file,
-            "-otxt",
-            "-l", self.language
-        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    def listen_and_transcribe(self):
+        """Captura voz y devuelve el texto transcrito."""
+        try:
+            self.record_audio()
+            self.resample_audio()
+            time.sleep(0.5)  # 👈 Aumentamos para asegurar que recording.wav está escrito
+            if not os.path.exists(self.wav_file):
+                print("❗ [ERROR] Archivo de audio no encontrado:", self.wav_file)
+                return ""
+            transcription = self.transcribe_audio()
+            return transcription
+        finally:
+            self.clean_temp_files()
 
-        print("🧠 [DEBUG] STDOUT:", result.stdout)
-        print("🧠 [DEBUG] STDERR:", result.stderr)
-
-        txt_file = self.wav_file + ".txt"
-        if os.path.exists(txt_file):
-            with open(txt_file, "r", encoding="utf-8") as f:
-                content = f.read().strip()
-                print("🧠 [DEBUG] CONTENIDO TXT:", content)
-                return content
-        else:
-            return ""
 
     def clean_temp_files(self):
         """Elimina archivos temporales de grabación."""
