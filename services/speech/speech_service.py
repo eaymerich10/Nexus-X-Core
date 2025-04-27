@@ -1,42 +1,32 @@
 import subprocess
 import time
 import os
-from assistant.utils.settings_manager import load_settings  # 👈 Importamos el loader de configuración
 
 class SpeechService:
-    def __init__(self, whisper_path=None, model_path=None):
-        # Cargar configuración de paths si no se pasan explícitamente
-        _, _, _, _, whisper_path_cfg, model_path_cfg = load_settings()
-        
-        self.whisper_path = whisper_path or whisper_path_cfg
-        self.model_path = model_path or model_path_cfg
-
+    def __init__(self, whisper_path="/home/nexus/whisper.cpp/whisper-cli", model_path="/home/nexus/whisper.cpp/whisper-cli/models/ggml-tiny.bin"):
+        self.whisper_path = whisper_path
+        self.model_path = model_path
         self.raw_file = "recording_raw.wav"
         self.wav_file = "recording.wav"
-        self.device = "hw:2,0"  # Micro USB
-        self.duration = 5       # Tiempo máximo de grabación en segundos
+        self.device = "hw:1,0"  # Micro USB
+        self.duration = 2       # Tiempo máximo de grabación en segundos
         self.language = "es"    # Idioma de transcripción
 
     def record_audio(self):
         """Graba audio desde el micrófono y para automáticamente cuando detecta silencio."""
         print("🎙️ [DEBUG] Empezando grabación con detección de silencio...")
         try:
-            device_to_use = f"plughw:{self.device.split(':')[1]}"
             subprocess.run([
                 "sox",
-                "-t", "alsa", device_to_use,
-                "-c", "1",           # Mono
-                "-b", "16",          # 16 bits
-                "-r", "44100",       # 44100 Hz
-                "debug_audio.wav",
+                "-t", "alsa", self.device,  # Forzar entrada al micro USB
+                self.raw_file,
+                "rate", "44100",
                 "silence", "1", "0.1", "1%", "1", "1.5", "1%"
+                # empieza grabación si detecta sonido >1%, para si detecta 1.5s de silencio
             ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=self.duration + 5)
             print("🎙️ [DEBUG] Grabación terminada (detectó silencio o timeout).")
         except subprocess.TimeoutExpired:
             print("⏱️ [DEBUG] Grabación cortada automáticamente por timeout.")
-
-
-
 
     def resample_audio(self):
         """Convierte el audio grabado a 16000 Hz."""
@@ -61,6 +51,7 @@ class SpeechService:
         ], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
         print("🧠 [DEBUG] Transcripción terminada.")
 
+        # Leer la transcripción desde el archivo generado
         txt_file = self.wav_file + ".txt"
         if os.path.exists(txt_file):
             with open(txt_file, "r", encoding="utf-8") as f:
