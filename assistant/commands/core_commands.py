@@ -1,5 +1,6 @@
 from core.texts import get_text
 from config.personality import get_available_modes
+from assistant.utils.settings_manager import save_input_method_to_config
 from datetime import datetime
 import platform
 import subprocess
@@ -7,6 +8,8 @@ from core.logger import logger
 
 VALID_LANGS = ["es", "en"]
 VALID_PROVIDERS = ["openai", "local"]
+VALID_INPUT_METHODS = ["text", "voice"]
+
 
 def handle_core_command(cmd, args, ctx):
     """
@@ -97,6 +100,17 @@ def handle_core_command(cmd, args, ctx):
 
     elif cmd == "/modos":
         return f"🧠 {get_text('available_modes', lang)}\n" + "\n".join(f"• {m}" for m in VALID_MODES)
+    
+    # Nuevo comando: /entrada
+    elif cmd == "/entrada":
+        if not args:
+            return f"🎤 Métodos de entrada disponibles: {', '.join(VALID_INPUT_METHODS)}"
+        new_input_method = args[0].lower()
+        if new_input_method not in VALID_INPUT_METHODS:
+            return f"❌ Método de entrada desconocido '{new_input_method}'. Opciones válidas: {', '.join(VALID_INPUT_METHODS)}"
+        save_input_method_to_config(new_input_method)
+        logger.info(f"[config] Input method changed to '{new_input_method}'")
+        return f"✅ Método de entrada cambiado a '{new_input_method}'. Reinicia NEXUS-X Core para aplicar cambios."
 
     return None  # No comando core
 

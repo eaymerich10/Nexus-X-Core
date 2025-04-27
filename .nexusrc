@@ -2,4 +2,5 @@
 mode = default
 lang = en
 ai_provider = openai
+input_method = voice
 
