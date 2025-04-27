@@ -9,7 +9,9 @@ def load_settings():
         settings.get("mode", "default"),
         settings.get("lang", "es"),
         settings.get("ai_provider", "openai"),
-        settings.get("input_method", "text")  # <<--- Nuevo: por defecto texto
+        settings.get("input_method", "text"),
+        settings.get("whisper_path", "/home/nexus/whisper.cpp /whisper-cli"),
+        settings.get("model_path", "/home/nexus/whisper.cpp /whisper-cli/models/ggml-tiny.bin"),
     )
 
 def save_mode_to_config(new_mode):
