@@ -8,7 +8,7 @@ class SpeechService:
         self.model_path = model_path
         self.raw_file = os.path.abspath("recording_raw.wav")
         self.wav_file = os.path.abspath("recording.wav")
-        self.device = "hw:1,0"  # Micro USB
+        self.device = "hw:2,0"  # Micro USB
         self.duration = 5       # Tiempo máximo de grabación en segundos
         self.language = "es"    # Idioma de transcripción
 
@@ -16,17 +16,16 @@ class SpeechService:
         """Graba audio desde el micrófono y para automáticamente cuando detecta silencio."""
         print("🎙️ [DEBUG] Empezando grabación con detección de silencio...")
         try:
-            device_to_use = f"plughw:{self.device.split(':')[1]}"
             subprocess.run([
                 "sox",
-                "-t", "alsa", device_to_use,
+                "-t", "alsa", self.device,
                 "-c", "1",
                 "-b", "16",
                 "-r", "48000",
-                self.raw_file,
+                self.raw_file,  # Graba en la ruta absoluta correcta
                 "silence", "1", "0.1", "1%", "1", "1.5", "1%"
             ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=self.duration + 5)
-            print("🎙️ [DEBUG] Grabación terminada (detectó silencio o timeout).")
+            print(f"🎙️ [DEBUG] Grabación terminada: {self.raw_file}")
         except subprocess.TimeoutExpired:
             print("⏱️ [DEBUG] Grabación cortada automáticamente por timeout.")
 
@@ -84,7 +83,7 @@ class SpeechService:
         try:
             self.record_audio()
             self.resample_audio()
-            time.sleep(0.5)  # Pequeña espera extra para asegurar que el sistema haya terminado de escribir
+            time.sleep(0.5)  # Pequeña espera extra para I/O en Raspberry
             transcription = self.transcribe_audio()
             return transcription
         finally:
