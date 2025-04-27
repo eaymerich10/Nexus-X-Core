@@ -3,6 +3,6 @@ mode = default
 lang = en
 ai_provider = openai
 input_method = voice
-whisper_path = /home/nexus/whisper.cpp /whisper-cli"
-model_path = /home/nexus/whisper.cpp /whisper-cli/models/ggml-tiny.bin
+whisper_path = /home/nexus/whisper.cpp/whisper-cli
+model_path = /home/nexus/whisper.cpp/whisper-cli/models/ggml-tiny.bin
 
