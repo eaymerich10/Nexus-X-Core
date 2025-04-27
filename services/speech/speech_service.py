@@ -18,7 +18,7 @@ class SpeechService:
         try:
             subprocess.run([
                 "sox",
-                "-t", "alsa", device_to_use,
+                "-t", "alsa", self.device,
                 "-c", "1",
                 "-b", "16",
                 "-r", "48000",  # <<< Mejora a 48kHz
@@ -43,20 +43,23 @@ class SpeechService:
     def transcribe_audio(self):
         """Transcribe el audio grabado usando whisper-cli."""
         print("🧠 [DEBUG] Empezando transcripción...")
-        subprocess.run([
+        result = subprocess.run([
             self.whisper_path,
             "-m", self.model_path,
             "-f", self.wav_file,
             "-otxt",
             "-l", self.language
-        ], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
-        print("🧠 [DEBUG] Transcripción terminada.")
+        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-        # Leer la transcripción desde el archivo generado
+        print("🧠 [DEBUG] STDOUT:", result.stdout)
+        print("🧠 [DEBUG] STDERR:", result.stderr)
+
         txt_file = self.wav_file + ".txt"
         if os.path.exists(txt_file):
             with open(txt_file, "r", encoding="utf-8") as f:
-                return f.read().strip()
+                content = f.read().strip()
+                print("🧠 [DEBUG] CONTENIDO TXT:", content)
+                return content
         else:
             return ""
 
