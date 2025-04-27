@@ -21,17 +21,18 @@ class SpeechService:
         """Graba audio desde el micrófono y para automáticamente cuando detecta silencio."""
         print("🎙️ [DEBUG] Empezando grabación con detección de silencio...")
         try:
-            device_to_use = f"plughw:{self.device.split(':')[1]}"  # Transformamos hw:2,0 ➔ plughw:2,0
+            device_to_use = f"plughw:{self.device.split(':')[1]}"
             subprocess.run([
                 "sox",
                 "-t", "alsa", device_to_use,
-                self.raw_file,
+                "debug_audio.wav",   # <--- Cambiar para guardar el audio de depuración
                 "rate", "44100",
                 "silence", "1", "0.1", "1%", "1", "1.5", "1%"
             ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=self.duration + 5)
             print("🎙️ [DEBUG] Grabación terminada (detectó silencio o timeout).")
         except subprocess.TimeoutExpired:
             print("⏱️ [DEBUG] Grabación cortada automáticamente por timeout.")
+
 
 
     def resample_audio(self):
