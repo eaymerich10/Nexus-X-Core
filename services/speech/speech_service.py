@@ -9,7 +9,7 @@ class SpeechService:
         self.raw_file = "recording_raw.wav"
         self.wav_file = "recording.wav"
         self.device = "hw:1,0"  # Micro USB
-        self.duration = 2       # Tiempo máximo de grabación en segundos
+        self.duration = 5       # Tiempo máximo de grabación en segundos
         self.language = "es"    # Idioma de transcripción
 
     def record_audio(self):
@@ -18,11 +18,12 @@ class SpeechService:
         try:
             subprocess.run([
                 "sox",
-                "-t", "alsa", self.device,  # Forzar entrada al micro USB
-                self.raw_file,
-                "rate", "44100",
+                "-t", "alsa", device_to_use,
+                "-c", "1",
+                "-b", "16",
+                "-r", "48000",  # <<< Mejora a 48kHz
+                "debug_audio.wav",
                 "silence", "1", "0.1", "1%", "1", "1.5", "1%"
-                # empieza grabación si detecta sonido >1%, para si detecta 1.5s de silencio
             ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=self.duration + 5)
             print("🎙️ [DEBUG] Grabación terminada (detectó silencio o timeout).")
         except subprocess.TimeoutExpired:
