@@ -5,6 +5,24 @@ from assistant.utils.settings_manager import save_mode_to_config, save_lang_to_c
 from services.speech.speech_service import SpeechService
 from services.speech.tts_service import TTSService
 
+def preprocess_response(text):
+    """Preprocesa la respuesta:reemplaza números."""
+
+    # Convertir números a palabras dígito a dígito
+    digit_map = {
+        '0': "cero", '1': "uno", '2': "dos", '3': "tres", '4': "cuatro",
+        '5': "cinco", '6': "seis", '7': "siete", '8': "ocho", '9': "nueve"
+    }
+
+    result = ""
+    for char in text:
+        if char.isdigit():
+            result += digit_map[char] + " "
+        else:
+            result += char
+
+    return result.strip()
+
 def main_loop(mode=None, lang=None):
     default_mode, default_lang, default_provider, default_input_method, default_whisper_path, default_model_path = load_settings()
     mode = mode or default_mode
@@ -51,7 +69,8 @@ def main_loop(mode=None, lang=None):
             result = handle_command(user_input, ctx=ctx)
             if result:
                 print("NEXUS-X Core:", result)
-                tts_service.speak(result)
+                processed_result = preprocess_response(result)
+                tts_service.speak(processed_result)
             continue
 
         if user_input.startswith("/"):
@@ -60,12 +79,16 @@ def main_loop(mode=None, lang=None):
                 save_mode_to_config(ctx.get_mode())
             if result:
                 print("NEXUS-X Core:", result)
-                tts_service.speak(result)
+                processed_result = preprocess_response(result)
+                tts_service.speak(processed_result)
         else:
-            result = get_response(ctx.get_history(), user_input, mode=ctx.get_mode(), lang=ctx.get_lang())
+            # Obtener respuesta de OpenAI
+            max_tokens = 80 if input_method == "voice" else 300
+            result = get_response(ctx.get_history(), user_input, mode=ctx.get_mode(), lang=ctx.get_lang(), max_tokens=max_tokens)
 
             ctx.add_message("user", user_input)
             ctx.add_message("assistant", result)
 
             print("NEXUS-X Core:", result)
-            tts_service.speak(result)
+            processed_result = preprocess_response(result)
+            tts_service.speak(processed_result)

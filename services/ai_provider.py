@@ -2,7 +2,7 @@ from services.openai_service import ask_openai
 # from services.local_model import ask_local  # <-- Lo activaremos en el futuro
 import os
 
-def get_response(history, user_input, mode="default", lang="es"):
+def get_response(history, user_input, mode="default", lang="es", max_tokens=80):
     """
     Generates a response based on the provided conversation history and user input
     using the specified AI provider.

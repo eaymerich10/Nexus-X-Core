@@ -4,17 +4,19 @@ import os
 
 class TTSService:
     def __init__(self):
+        # Cambiado a un modelo más rápido en español
         self.tts = TTS(model_name="tts_models/es/css10/vits", progress_bar=False, gpu=False)
 
     def speak(self, text):
-        """Convierte texto en voz y lo reproduce."""
         if not text:
             return
 
         output_file = "nexus_response.wav"
         self.tts.tts_to_file(
             text=text,
-            file_path=output_file
+            file_path=output_file,
+            speaker_wav=None,
+            sample_rate=16000
         )
 
         if os.path.exists(output_file):

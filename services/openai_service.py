@@ -6,14 +6,33 @@ from dotenv import load_dotenv
 load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-def ask_openai(history, user_input, lang="es", model="gpt-4o", mode="default"):
+
+def ask_openai(history, user_input, lang="es", model="gpt-4o-mini", mode="default", max_tokens=80):
     try:
         system_prompt = get_personality_prompt(mode, lang)
+
+        # Añadir system_prompt dinámico extra
+        extra_prompt = "Recuerda: tu respuesta no debe superar tres frases breves y directas."
+        full_prompt = system_prompt + "\n\n" + extra_prompt
+
         response = client.chat.completions.create(
             model=model,
-            messages=[{"role": "system", "content": system_prompt}] + history + [{"role": "user", "content": user_input}],
-            max_tokens=300
+            messages=[{"role": "system", "content": full_prompt}] + history + [{"role": "user", "content": user_input}],
+            max_tokens=max_tokens
         )
-        return response.choices[0].message.content.strip()
+        content = response.choices[0].message.content.strip()
+
+        # Mostrar tokens usados
+        usage = getattr(response, "usage", None)
+        if usage:
+            prompt_tokens = usage.prompt_tokens
+            completion_tokens = usage.completion_tokens
+            total_tokens = usage.total_tokens
+            print(f"🧠 Tokens usados → Prompt: {prompt_tokens}, Respuesta: {completion_tokens}, Total: {total_tokens}")
+
+        return content
+
     except Exception as e:
         return f"[ERROR] {str(e)}"
+
+
