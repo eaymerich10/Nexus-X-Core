@@ -1,7 +1,7 @@
 from assistant.utils.settings_manager import save_mode_to_config, save_lang_to_config, save_provider_to_config, load_settings
 from datetime import datetime, timedelta
 
-MAX_HISTORY_MINUTES = 0.5  # duración máxima del historial en minutos
+MAX_HISTORY_MINUTES = 10  # duración máxima del historial en minutos
 
 class ContextManager:
     def __init__(self):
