@@ -12,8 +12,7 @@ def ask_openai(history, user_input, lang="es", model="gpt-4o-mini", mode="defaul
         system_prompt = get_personality_prompt(mode, lang)
 
         # Añadir system_prompt dinámico extra
-        extra_prompt = "Recuerda: tu respuesta no debe superar tres frases breves y directas."
-        full_prompt = system_prompt + "\n\n" + extra_prompt
+        full_prompt = system_prompt
 
         response = client.chat.completions.create(
             model=model,

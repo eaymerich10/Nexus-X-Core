@@ -1,4 +1,7 @@
 from assistant.utils.settings_manager import save_mode_to_config, save_lang_to_config, save_provider_to_config, load_settings
+from datetime import datetime, timedelta
+
+MAX_HISTORY_MINUTES = 0.5  # duración máxima del historial en minutos
 
 class ContextManager:
     def __init__(self):
@@ -16,12 +19,27 @@ class ContextManager:
         self.pending_description = None  # Description of what is pending
 
     # ====== HISTORY MANAGEMENT ======
-
     def get_history(self):
-        return self.history.copy()
+        visible_history = [{"role": m["role"], "content": m["content"]} for m in self.history]
+        print(f"📚 [DEBUG] Mensajes enviados a OpenAI ({len(visible_history)}):")
+        for i, m in enumerate(visible_history):
+            print(f"  [{i}] {m['role']}: {m['content'][:60]}...")
+        return visible_history
+
 
     def add_message(self, role, content):
-        self.history.append({"role": role, "content": content})
+        """Añade un mensaje con marca temporal y recorta automáticamente."""
+        self.history.append({
+            "role": role,
+            "content": content,
+            "timestamp": datetime.utcnow()
+        })
+        self.trim_history_by_time()
+
+    def trim_history_by_time(self):
+        """Elimina mensajes del historial que sean más antiguos de X minutos."""
+        cutoff = datetime.utcnow() - timedelta(minutes=MAX_HISTORY_MINUTES)
+        self.history = [m for m in self.history if m.get("timestamp", cutoff) >= cutoff]
 
     def clear_history(self):
         self.history = []
@@ -66,23 +84,14 @@ class ContextManager:
     # ====== REMINDERS INDEX MANAGEMENT ======
 
     def set_reminders_index(self, reminders):
-        """
-        Sets the mapping of reminder numbers to their UUIDs for easy deletion by number.
-        """
         self.reminders_index = {str(i + 1): reminder["id"] for i, reminder in enumerate(reminders)}
 
     def get_reminder_uuid(self, index):
-        """
-        Returns the UUID of a reminder given its number as a string.
-        """
         return self.reminders_index.get(str(index))
 
     # ====== PENDING ACTION MANAGEMENT ======
 
     def set_pending_action(self, action_type, reminder_id, description):
-        """
-        Sets a pending action that requires confirmation.
-        """
         self.pending_action = {"type": action_type, "reminder_id": reminder_id}
         self.pending_description = description
 
@@ -99,10 +108,6 @@ class ContextManager:
     # ====== RESET METHOD ======
 
     def reset(self):
-        """
-        Resets context: clears history, reloads configuration from settings,
-        and resets internal emotional and energy states.
-        """
         self.clear_history()
         mode, lang, provider = load_settings()
         self.mode = mode

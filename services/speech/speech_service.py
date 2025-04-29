@@ -9,7 +9,7 @@ class SpeechService:
         self.raw_file = os.path.abspath("recording_raw.wav")
         self.wav_file = os.path.abspath("recording.wav")
         self.device = "hw:2,0"  # Micro USB
-        self.duration = 5       # Tiempo máximo de grabación en segundos
+        self.duration = 3       # Tiempo máximo de grabación en segundos
         self.language = "es"    # Idioma de transcripción
 
     def record_audio(self):
