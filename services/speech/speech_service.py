@@ -14,22 +14,21 @@ class SpeechService:
         self.clean_file = os.path.join(project_root, "recording_clean.wav")
         self.noise_profile = os.path.join(project_root, "utils", "noise.prof")
 
-        self.device = "hw:2,0"
+        self.device = "hw:1,0"  # ajusta según tu dispositivo detectado
         self.duration = 4  # duración en segundos
         self.language = "es"
 
     def record_audio(self):
-        print("🎙️ [DEBUG] Empezando grabación con arecord...")
+        print("🎙️ [DEBUG] Empezando grabación con sox...")
         try:
             result = subprocess.run([
-                "arecord",
-                "-D", self.device,
-                "-f", "cd",
-                "-t", "wav",
-                "-d", str(self.duration),
-                "-r", "48000",
+                "sox",
+                "-t", "alsa", self.device,
                 "-c", "1",
-                self.raw_file
+                "-b", "16",
+                "-r", "48000",
+                self.raw_file,
+                "trim", "0", str(self.duration)
             ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=self.duration + 5)
 
             print("🎙️ [DEBUG] STDOUT:", result.stdout.decode())
