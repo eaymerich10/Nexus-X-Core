@@ -6,9 +6,7 @@ from services.speech.speech_service import SpeechService
 from services.speech.tts_service import TTSService
 
 def preprocess_response(text):
-    """Preprocesa la respuesta:reemplaza números."""
-
-    # Convertir números a palabras dígito a dígito
+    """Preprocesa la respuesta: reemplaza números por palabras dígito a dígito."""
     digit_map = {
         '0': "cero", '1': "uno", '2': "dos", '3': "tres", '4': "cuatro",
         '5': "cinco", '6': "seis", '7': "siete", '8': "ocho", '9': "nueve"
@@ -65,6 +63,23 @@ def main_loop(mode=None, lang=None):
             print("NEXUS-X Core: Goodbye.")
             break
 
+        # 🚀 HOOK: Detectar y guardar en memoria persistente
+        lower_input = user_input.lower()
+        if "me llamo" in lower_input:
+            name = lower_input.split("me llamo")[-1].strip().split()[0]
+            ctx.identity_memory.set("name", name)
+            print(f"💾 [MEMORIA] Nombre guardado: {name}")
+
+        if "mis intereses son" in lower_input:
+            interests = lower_input.split("mis intereses son")[-1].strip()
+            ctx.identity_memory.set("interests", interests)
+            print(f"💾 [MEMORIA] Intereses guardados: {interests}")
+
+        if "mi idioma es" in lower_input:
+            language = lower_input.split("mi idioma es")[-1].strip().split()[0]
+            ctx.identity_memory.set("preferred_language", language)
+            print(f"💾 [MEMORIA] Idioma guardado: {language}")
+
         if ctx.get_pending_action():
             result = handle_command(user_input, ctx=ctx)
             if result:
@@ -82,9 +97,22 @@ def main_loop(mode=None, lang=None):
                 processed_result = preprocess_response(result)
                 tts_service.speak(processed_result)
         else:
-            # Obtener respuesta de OpenAI
+            # Obtener datos de memoria persistente
+            name = ctx.identity_memory.get("name")
+            print(f"💾 [MEMORIA] Nombre: {name}")
+            interests = ctx.identity_memory.get("interests")
+
+            # Construir prompt enriquecido
             max_tokens = 80 if input_method == "voice" else 300
-            result = get_response(ctx.get_history(), user_input, mode=ctx.get_mode(), lang=ctx.get_lang(), max_tokens=max_tokens)
+            result = get_response(
+                ctx.get_history(),
+                user_input,
+                mode=ctx.get_mode(),
+                lang=ctx.get_lang(),
+                max_tokens=max_tokens,
+                extra_context=f"El usuario se llama {name}." if name else "",
+                extra_interests=f"Tiene intereses en: {interests}." if interests else ""
+            )
 
             ctx.add_message("user", user_input)
             ctx.add_message("assistant", result)

@@ -1,0 +1,12 @@
+{
+  "name": "Enric",
+  "interests": [
+    "programación",
+    "ciencia",
+    "tecnología",
+    "historia"
+  ],
+  "custom_data": {
+    "modo_favorito": "default"
+  }
+}

@@ -1,4 +1,5 @@
 from assistant.utils.settings_manager import save_mode_to_config, save_lang_to_config, save_provider_to_config, load_settings
+from services.memory.memory_manager import MemoryManager  # 🚀 Nuevo import
 from datetime import datetime, timedelta
 
 MAX_HISTORY_MINUTES = 10  # duración máxima del historial en minutos
@@ -18,6 +19,9 @@ class ContextManager:
         self.pending_action = None  # Pending action confirmation (e.g., delete reminder)
         self.pending_description = None  # Description of what is pending
 
+        # 🚀 Nueva memoria persistente
+        self.identity_memory = MemoryManager()
+
     # ====== HISTORY MANAGEMENT ======
     def get_history(self):
         visible_history = [{"role": m["role"], "content": m["content"]} for m in self.history]
@@ -25,7 +29,6 @@ class ContextManager:
         for i, m in enumerate(visible_history):
             print(f"  [{i}] {m['role']}: {m['content'][:60]}...")
         return visible_history
-
 
     def add_message(self, role, content):
         """Añade un mensaje con marca temporal y recorta automáticamente."""
@@ -45,7 +48,6 @@ class ContextManager:
         self.history = []
 
     # ====== CONFIGURATION MANAGEMENT ======
-
     def get_mode(self):
         return self.mode
 
@@ -68,7 +70,6 @@ class ContextManager:
         save_provider_to_config(new_provider)
 
     # ====== SYSTEM STATE MANAGEMENT ======
-
     def get_emotion(self):
         return self.emotion
 
@@ -82,7 +83,6 @@ class ContextManager:
         self.energy_level = max(0, min(100, new_level))  # Always between 0 and 100
 
     # ====== REMINDERS INDEX MANAGEMENT ======
-
     def set_reminders_index(self, reminders):
         self.reminders_index = {str(i + 1): reminder["id"] for i, reminder in enumerate(reminders)}
 
@@ -90,7 +90,6 @@ class ContextManager:
         return self.reminders_index.get(str(index))
 
     # ====== PENDING ACTION MANAGEMENT ======
-
     def set_pending_action(self, action_type, reminder_id, description):
         self.pending_action = {"type": action_type, "reminder_id": reminder_id}
         self.pending_description = description
@@ -106,7 +105,6 @@ class ContextManager:
         self.pending_description = None
 
     # ====== RESET METHOD ======
-
     def reset(self):
         self.clear_history()
         mode, lang, provider = load_settings()
@@ -118,3 +116,4 @@ class ContextManager:
         self.reminders_index = {}
         self.pending_action = None
         self.pending_description = None
+        # 🚀 No limpiamos memory aquí: es persistente por diseño
