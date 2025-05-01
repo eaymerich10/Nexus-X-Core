@@ -8,7 +8,7 @@ class SpeechService:
         self.model_path = model_path
         self.raw_file = os.path.abspath("recording_raw.wav")
         self.wav_file = os.path.abspath("recording.wav")
-        self.device = "hw:2,0"  # Micro USB
+        self.device = "hw:1,0"  # Micro USB
         self.duration = 3       # Tiempo máximo de grabación en segundos
         self.language = "es"    # Idioma de transcripción
 

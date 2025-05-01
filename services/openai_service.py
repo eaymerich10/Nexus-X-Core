@@ -7,7 +7,7 @@ load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
-def ask_openai(history, user_input, lang="es", model="gpt-4o-mini", mode="default", max_tokens=80):
+def ask_openai(history, user_input, lang="es", model="gpt-4o-mini", mode="default", max_tokens=100):
     try:
         system_prompt = get_personality_prompt(mode, lang)
 
