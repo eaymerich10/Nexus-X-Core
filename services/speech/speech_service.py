@@ -14,8 +14,8 @@ class SpeechService:
         self.clean_file = os.path.join(project_root, "recording_clean.wav")
         self.noise_profile = os.path.join(project_root, "utils", "noise.prof")
 
-        self.device = "hw:1,0"
-        self.duration = 3
+        self.device = "hw:2,0"
+        self.duration = 4
         self.language = "es"
 
     def record_audio(self):
