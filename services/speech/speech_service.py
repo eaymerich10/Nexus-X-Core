@@ -9,42 +9,15 @@ class SpeechService:
 
         self.whisper_path = whisper_path
         self.model_path = model_path
-        self.raw_file = os.path.join(project_root, "recording_raw.wav")
         self.wav_file = os.path.join(project_root, "recording.wav")
         self.clean_file = os.path.join(project_root, "recording_clean.wav")
         self.noise_profile = os.path.join(project_root, "utils", "noise.prof")
-
-        self.device = "hw:1,0"  # ajusta según tu dispositivo detectado
-        self.duration = 4  # duración en segundos
         self.language = "es"
 
-    def record_audio(self):
-        print("🎙️ [DEBUG] Empezando grabación con sox...")
-        try:
-            result = subprocess.run([
-                "sox",
-                "-t", "alsa", self.device,
-                "-c", "1",
-                "-b", "16",
-                "-r", "48000",
-                self.raw_file,
-                "trim", "0", str(self.duration)
-            ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=self.duration + 5)
-
-            print("🎙️ [DEBUG] STDOUT:", result.stdout.decode())
-            print("🎙️ [DEBUG] STDERR:", result.stderr.decode())
-
-            if result.returncode == 0:
-                print(f"🎙️ [DEBUG] Grabación terminada: {self.raw_file}")
-            else:
-                print(f"❗ [ERROR] Grabación fallida con código {result.returncode}")
-        except subprocess.TimeoutExpired:
-            print("⏱️ [DEBUG] Grabación cortada automáticamente por timeout.")
-
-    def resample_audio(self):
+    def resample_audio(self, input_file):
         print("🎛️ [DEBUG] Empezando resampleo...")
         result = subprocess.run([
-            "sox", self.raw_file,
+            "sox", input_file,
             "-c", "1",
             "-r", "16000",
             self.wav_file
@@ -54,11 +27,12 @@ class SpeechService:
 
         if result.returncode != 0:
             print("❗ [ERROR] Resampleo fallido:", result.stderr.decode())
+            return False
         else:
             print("🎛️ [DEBUG] Resampleo terminado.")
+            return True
 
     def reduce_noise(self):
-        """Aplica reducción de ruido usando utils/noise.prof"""
         if os.path.exists(self.noise_profile):
             print(f"🎚️ [DEBUG] Aplicando reducción de ruido usando {self.noise_profile}...")
             result = subprocess.run([
@@ -71,8 +45,6 @@ class SpeechService:
             if result.returncode != 0:
                 print("❗ [ERROR] Reducción de ruido fallida:", result.stderr.decode())
                 self.clean_file = self.wav_file  # usa el archivo original si falla
-            else:
-                print("🎚️ [DEBUG] Reducción de ruido terminada.")
         else:
             print(f"⚠️ [ADVERTENCIA] Perfil de ruido no encontrado en {self.noise_profile}, usando archivo sin limpiar.")
             self.clean_file = self.wav_file
@@ -107,14 +79,14 @@ class SpeechService:
             return ""
 
     def clean_temp_files(self):
-        for file in [self.raw_file, self.wav_file, self.clean_file, self.clean_file + ".txt"]:
+        for file in [self.wav_file, self.clean_file, self.clean_file + ".txt"]:
             if os.path.exists(file):
                 os.remove(file)
 
-    def listen_and_transcribe(self):
+    def process_wav_file(self, raw_file):
         try:
-            self.record_audio()
-            self.resample_audio()
+            if not self.resample_audio(raw_file):
+                return ""
             self.reduce_noise()
             time.sleep(0.5)
             transcription = self.transcribe_audio()

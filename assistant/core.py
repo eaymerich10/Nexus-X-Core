@@ -1,11 +1,16 @@
+import os
+import wave
+import time
+import platform
+import pvporcupine
+import pyaudio
+
 from assistant.context import ContextManager
 from assistant.commands.router import handle_command
 from services.ai_provider import get_response
 from assistant.utils.settings_manager import save_mode_to_config, save_lang_to_config, save_provider_to_config, load_settings
 from services.speech.speech_service import SpeechService
 from services.speech.tts_service import TTSService
-from services.wakeword_service import WakeWordService  # 🔗 Importamos el módulo limpio (ya autoconfigurado)
-import time
 
 def preprocess_response(text):
     """Preprocesa la respuesta: reemplaza números por palabras dígito a dígito."""
@@ -32,17 +37,42 @@ def main_loop(mode=None, lang=None):
     ctx = ContextManager()
     ctx.set_mode(mode)
 
-    if input_method == "voice":
-        speech_service = SpeechService(
-            whisper_path=default_whisper_path,
-            model_path=default_model_path
-        )
-        wakeword_service = WakeWordService()
-        print("🎤 NEXUS-X Core arrancado en modo entrada de voz con activación por palabra clave.\n")
-    else:
-        print("⌨️ NEXUS-X Core arrancado en modo entrada de texto.\n")
-
     tts_service = TTSService()
+    speech_service = SpeechService(
+        whisper_path=default_whisper_path,
+        model_path=default_model_path
+    )
+
+    if input_method == "voice":
+        # Configuración de wakeword
+        import os
+        from dotenv import load_dotenv
+        load_dotenv()
+
+        if platform.machine() == 'x86_64':
+            ACCESS_KEY = os.getenv("ACCESS_KEY_UBUNTU")
+            KEYWORD_PATH = os.getenv("KEYWORD_PATH_UBUNTU")
+        elif platform.machine() == 'aarch64':
+            ACCESS_KEY = os.getenv("ACCESS_KEY_RPI")
+            KEYWORD_PATH = os.getenv("KEYWORD_PATH_RPI")
+        else:
+            raise RuntimeError(f"❌ Plataforma no soportada: {platform.machine()}")
+
+        porcupine = pvporcupine.create(
+            access_key=ACCESS_KEY,
+            keyword_paths=[KEYWORD_PATH]
+        )
+        pa = pyaudio.PyAudio()
+        audio_stream = pa.open(
+            rate=porcupine.sample_rate,
+            channels=1,
+            format=pyaudio.paInt16,
+            input=True,
+            frames_per_buffer=porcupine.frame_length
+        )
+        print("🎤 NEXUS-X Core arrancado en modo voz (wakeword integrado).\n")
+    else:
+        print("⌨️ NEXUS-X Core arrancado en modo texto.\n")
 
     print(f"🛠️ Configuración cargada:")
     print(f"• Modo: {ctx.get_mode()}")
@@ -56,16 +86,31 @@ def main_loop(mode=None, lang=None):
     try:
         while True:
             if input_method == "voice":
-                if not wakeword_service.wait_for_wakeword():
+                print("🎧 Esperando palabra de activación...")
+                pcm = audio_stream.read(porcupine.frame_length, exception_on_overflow=False)
+                pcm = [int.from_bytes(pcm[i:i+2], 'little', signed=True) for i in range(0, len(pcm), 2)]
+                result = porcupine.process(pcm)
+                if result < 0:
                     continue
 
-                # Detener listener para liberar el micrófono
-                wakeword_service.pause()
+                print("✅ Activación detectada. Grabando...")
 
-                print("🎤 Esperando un momento antes de grabar...")
-                time.sleep(0.5)  # para asegurarse de que el dispositivo está libre
-                print("🎤 Escuchando al usuario...")
-                user_input = speech_service.listen_and_transcribe().strip()
+                frames = []
+                record_seconds = 4  # puedes ajustar la duración
+                for _ in range(0, int(porcupine.sample_rate / porcupine.frame_length * record_seconds)):
+                    data = audio_stream.read(porcupine.frame_length, exception_on_overflow=False)
+                    frames.append(data)
+
+                raw_file = "recording_raw.wav"
+                wf = wave.open(raw_file, 'wb')
+                wf.setnchannels(1)
+                wf.setsampwidth(pa.get_sample_size(pyaudio.paInt16))
+                wf.setframerate(porcupine.sample_rate)
+                wf.writeframes(b''.join(frames))
+                wf.close()
+
+                print(f"🎧 Audio guardado en {raw_file}. Procesando...")
+                user_input = speech_service.process_wav_file(raw_file).strip()
             else:
                 user_input = input("You: ").strip()
 
@@ -95,9 +140,6 @@ def main_loop(mode=None, lang=None):
                     print("NEXUS-X Core:", result)
                     processed_result = preprocess_response(result)
                     tts_service.speak(processed_result)
-                # Reactivar wake word listener para el próximo ciclo
-                if input_method == "voice":
-                    wakeword_service.resume()
                 continue
 
             if user_input.startswith("/"):
@@ -129,12 +171,12 @@ def main_loop(mode=None, lang=None):
                 processed_result = preprocess_response(result)
                 tts_service.speak(processed_result)
 
-            # Reactivar wake word listener para el próximo ciclo
-            if input_method == "voice":
-                wakeword_service.resume()
-
     except KeyboardInterrupt:
         print("🛑 Interrumpido por el usuario.")
     finally:
         if input_method == "voice":
-            wakeword_service.cleanup()
+            audio_stream.stop_stream()
+            audio_stream.close()
+            pa.terminate()
+            porcupine.delete()
+            print("✅ Recursos liberados correctamente.")
