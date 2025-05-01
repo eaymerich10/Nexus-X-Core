@@ -27,6 +27,9 @@ class WakeWordService:
     def __init__(self, access_key=ACCESS_KEY, keyword_path=KEYWORD_PATH):
         self.access_key = access_key
         self.keyword_path = keyword_path
+        self._initialize_porcupine()
+
+    def _initialize_porcupine(self):
         self.porcupine = pvporcupine.create(
             access_key=self.access_key,
             keyword_paths=[self.keyword_path]
@@ -39,6 +42,7 @@ class WakeWordService:
             input=True,
             frames_per_buffer=self.porcupine.frame_length
         )
+        print("🎙️ [DEBUG] Wake word listener inicializado.")
 
     def wait_for_wakeword(self):
         print("🎤 Esperando palabra de activación...")
@@ -55,21 +59,16 @@ class WakeWordService:
             self.audio_stream.stop_stream()
         self.audio_stream.close()
         self.pa.terminate()
-        print("🎙️ [DEBUG] Wake word listener detenido temporalmente.")
+        self.porcupine.delete()
+        print("🎙️ [DEBUG] Wake word listener detenido y Porcupine destruido temporalmente.")
 
     def resume(self):
-        self.pa = pyaudio.PyAudio()
-        self.audio_stream = self.pa.open(
-            rate=self.porcupine.sample_rate,
-            channels=1,
-            format=pyaudio.paInt16,
-            input=True,
-            frames_per_buffer=self.porcupine.frame_length
-        )
-        print("🎙️ [DEBUG] Wake word listener reactivado.")
+        self._initialize_porcupine()
+        print("🎙️ [DEBUG] Wake word listener reactivado y Porcupine reinicializado.")
 
     def cleanup(self):
         self.audio_stream.stop_stream()
         self.audio_stream.close()
         self.porcupine.delete()
         self.pa.terminate()
+        print("🎙️ [DEBUG] Wake word listener limpiado completamente.")
