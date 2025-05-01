@@ -84,9 +84,9 @@ def main_loop(mode=None, lang=None):
     print()
 
     try:
+        print("🎧 Esperando palabra de activación...")
         while True:
             if input_method == "voice":
-                print("🎧 Esperando palabra de activación...")
                 pcm = audio_stream.read(porcupine.frame_length, exception_on_overflow=False)
                 pcm = [int.from_bytes(pcm[i:i+2], 'little', signed=True) for i in range(0, len(pcm), 2)]
                 result = porcupine.process(pcm)
