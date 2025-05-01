@@ -5,6 +5,7 @@ from assistant.utils.settings_manager import save_mode_to_config, save_lang_to_c
 from services.speech.speech_service import SpeechService
 from services.speech.tts_service import TTSService
 from services.wakeword_service import WakeWordService  # 🔗 Importamos el módulo limpio (ya autoconfigurado)
+import time
 
 def preprocess_response(text):
     """Preprocesa la respuesta: reemplaza números por palabras dígito a dígito."""
@@ -36,7 +37,7 @@ def main_loop(mode=None, lang=None):
             whisper_path=default_whisper_path,
             model_path=default_model_path
         )
-        wakeword_service = WakeWordService()  # 🔑 Ya usa claves y ruta desde .env
+        wakeword_service = WakeWordService()
         print("🎤 NEXUS-X Core arrancado en modo entrada de voz con activación por palabra clave.\n")
     else:
         print("⌨️ NEXUS-X Core arrancado en modo entrada de texto.\n")
@@ -57,6 +58,8 @@ def main_loop(mode=None, lang=None):
             if input_method == "voice":
                 if not wakeword_service.wait_for_wakeword():
                     continue
+                print("🎤 Esperando un momento antes de grabar...")
+                time.sleep(0.5)  # o incluso 1 segundo
                 print("🎤 Escuchando al usuario...")
                 user_input = speech_service.listen_and_transcribe().strip()
             else:

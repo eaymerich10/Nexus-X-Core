@@ -21,7 +21,7 @@ class SpeechService:
     def record_audio(self):
         print("🎙️ [DEBUG] Empezando grabación...")
         try:
-            subprocess.run([
+            result = subprocess.run([
                 "sox",
                 "-t", "alsa", self.device,
                 "-c", "1",
@@ -29,8 +29,15 @@ class SpeechService:
                 "-r", "48000",
                 self.raw_file,
                 "silence", "1", "0.1", "1%", "1", "1.5", "1%"
-            ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=self.duration + 5)
-            print(f"🎙️ [DEBUG] Grabación terminada: {self.raw_file}")
+            ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=self.duration + 5)
+            
+            print("🎙️ [DEBUG] STDOUT:", result.stdout.decode())
+            print("🎙️ [DEBUG] STDERR:", result.stderr.decode())
+
+            if result.returncode == 0:
+                print(f"🎙️ [DEBUG] Grabación terminada: {self.raw_file}")
+            else:
+                print(f"❗ [ERROR] Grabación fallida con código {result.returncode}")
         except subprocess.TimeoutExpired:
             print("⏱️ [DEBUG] Grabación cortada automáticamente por timeout.")
 
@@ -42,6 +49,9 @@ class SpeechService:
             "-r", "16000",
             self.wav_file
         ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        print("🎛️ [DEBUG] STDOUT:", result.stdout.decode())
+        print("🎛️ [DEBUG] STDERR:", result.stderr.decode())
+
         if result.returncode != 0:
             print("❗ [ERROR] Resampleo fallido:", result.stderr.decode())
         else:
@@ -55,6 +65,9 @@ class SpeechService:
                 "sox", self.wav_file, self.clean_file,
                 "noisered", self.noise_profile, "0.21"
             ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            print("🎚️ [DEBUG] STDOUT:", result.stdout.decode())
+            print("🎚️ [DEBUG] STDERR:", result.stderr.decode())
+
             if result.returncode != 0:
                 print("❗ [ERROR] Reducción de ruido fallida:", result.stderr.decode())
                 self.clean_file = self.wav_file  # usa el archivo original si falla
