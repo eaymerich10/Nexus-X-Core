@@ -3,18 +3,23 @@ import time
 import os
 
 class SpeechService:
-    def __init__(self, whisper_path="/home/nexus/whisper.cpp/whisper-cli", model_path="/home/nexus/whisper.cpp/models/ggml-tiny.bin"):
+    def __init__(self, whisper_path="/home/nexus/whisper.cpp/whisper-cli", model_path="/home/nexus/whisper.cpp/models/ggml-base.bin"):
+        base_dir = os.path.dirname(os.path.abspath(__file__))  # /services/speech
+        project_root = os.path.abspath(os.path.join(base_dir, "../../"))  # sube dos niveles al root del proyecto
+
         self.whisper_path = whisper_path
         self.model_path = model_path
-        self.raw_file = os.path.abspath("recording_raw.wav")
-        self.wav_file = os.path.abspath("recording.wav")
-        self.device = "hw:1,0"  # Micro USB
-        self.duration = 3       # Tiempo máximo de grabación en segundos
-        self.language = "es"    # Idioma de transcripción
+        self.raw_file = os.path.join(project_root, "recording_raw.wav")
+        self.wav_file = os.path.join(project_root, "recording.wav")
+        self.clean_file = os.path.join(project_root, "recording_clean.wav")
+        self.noise_profile = os.path.join(project_root, "utils", "noise.prof")
+
+        self.device = "hw:1,0"
+        self.duration = 3
+        self.language = "es"
 
     def record_audio(self):
-        """Graba audio desde el micrófono y para automáticamente cuando detecta silencio."""
-        print("🎙️ [DEBUG] Empezando grabación con detección de silencio...")
+        print("🎙️ [DEBUG] Empezando grabación...")
         try:
             subprocess.run([
                 "sox",
@@ -22,7 +27,7 @@ class SpeechService:
                 "-c", "1",
                 "-b", "16",
                 "-r", "48000",
-                self.raw_file,  # Graba en la ruta absoluta correcta
+                self.raw_file,
                 "silence", "1", "0.1", "1%", "1", "1.5", "1%"
             ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=self.duration + 5)
             print(f"🎙️ [DEBUG] Grabación terminada: {self.raw_file}")
@@ -30,7 +35,6 @@ class SpeechService:
             print("⏱️ [DEBUG] Grabación cortada automáticamente por timeout.")
 
     def resample_audio(self):
-        """Convierte el audio grabado a 16000 Hz."""
         print("🎛️ [DEBUG] Empezando resampleo...")
         result = subprocess.run([
             "sox", self.raw_file,
@@ -43,26 +47,43 @@ class SpeechService:
         else:
             print("🎛️ [DEBUG] Resampleo terminado.")
 
+    def reduce_noise(self):
+        """Aplica reducción de ruido usando utils/noise.prof"""
+        if os.path.exists(self.noise_profile):
+            print(f"🎚️ [DEBUG] Aplicando reducción de ruido usando {self.noise_profile}...")
+            result = subprocess.run([
+                "sox", self.wav_file, self.clean_file,
+                "noisered", self.noise_profile, "0.21"
+            ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if result.returncode != 0:
+                print("❗ [ERROR] Reducción de ruido fallida:", result.stderr.decode())
+                self.clean_file = self.wav_file  # usa el archivo original si falla
+            else:
+                print("🎚️ [DEBUG] Reducción de ruido terminada.")
+        else:
+            print(f"⚠️ [ADVERTENCIA] Perfil de ruido no encontrado en {self.noise_profile}, usando archivo sin limpiar.")
+            self.clean_file = self.wav_file
+
     def transcribe_audio(self):
-        """Transcribe el audio grabado usando whisper-cli."""
         print("🧠 [DEBUG] Empezando transcripción...")
 
-        if not os.path.exists(self.wav_file):
-            print(f"❗ [ERROR] Archivo de audio no encontrado: {self.wav_file}")
+        if not os.path.exists(self.clean_file):
+            print(f"❗ [ERROR] Archivo de audio no encontrado: {self.clean_file}")
             return ""
 
         result = subprocess.run([
             self.whisper_path,
             "-m", self.model_path,
-            "-f", self.wav_file,
+            "-f", self.clean_file,
             "-otxt",
+            "-pp",
             "-l", self.language
         ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
         print("🧠 [DEBUG] STDOUT:", result.stdout)
         print("🧠 [DEBUG] STDERR:", result.stderr)
 
-        txt_file = self.wav_file + ".txt"
+        txt_file = self.clean_file + ".txt"
         if os.path.exists(txt_file):
             with open(txt_file, "r", encoding="utf-8") as f:
                 content = f.read().strip()
@@ -73,17 +94,16 @@ class SpeechService:
             return ""
 
     def clean_temp_files(self):
-        """Elimina archivos temporales de grabación."""
-        for file in [self.raw_file, self.wav_file, self.wav_file + ".txt"]:
+        for file in [self.raw_file, self.wav_file, self.clean_file, self.clean_file + ".txt"]:
             if os.path.exists(file):
                 os.remove(file)
 
     def listen_and_transcribe(self):
-        """Captura voz y devuelve el texto transcrito."""
         try:
             self.record_audio()
             self.resample_audio()
-            time.sleep(0.5)  # Pequeña espera extra para I/O en Raspberry
+            self.reduce_noise()
+            time.sleep(0.5)
             transcription = self.transcribe_audio()
             return transcription
         finally:
