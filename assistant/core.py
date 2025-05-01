@@ -58,8 +58,12 @@ def main_loop(mode=None, lang=None):
             if input_method == "voice":
                 if not wakeword_service.wait_for_wakeword():
                     continue
+
+                # Detener listener para liberar el micrófono
+                wakeword_service.pause()
+
                 print("🎤 Esperando un momento antes de grabar...")
-                time.sleep(0.5)  # o incluso 1 segundo
+                time.sleep(0.5)  # para asegurarse de que el dispositivo está libre
                 print("🎤 Escuchando al usuario...")
                 user_input = speech_service.listen_and_transcribe().strip()
             else:
@@ -91,6 +95,9 @@ def main_loop(mode=None, lang=None):
                     print("NEXUS-X Core:", result)
                     processed_result = preprocess_response(result)
                     tts_service.speak(processed_result)
+                # Reactivar wake word listener para el próximo ciclo
+                if input_method == "voice":
+                    wakeword_service.resume()
                 continue
 
             if user_input.startswith("/"):
@@ -121,6 +128,11 @@ def main_loop(mode=None, lang=None):
                 print("NEXUS-X Core:", result)
                 processed_result = preprocess_response(result)
                 tts_service.speak(processed_result)
+
+            # Reactivar wake word listener para el próximo ciclo
+            if input_method == "voice":
+                wakeword_service.resume()
+
     except KeyboardInterrupt:
         print("🛑 Interrumpido por el usuario.")
     finally:
