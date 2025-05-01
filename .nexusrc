@@ -4,5 +4,5 @@ lang = en
 ai_provider = openai
 input_method = voice
 whisper_path = /home/nexus/whisper.cpp/whisper-cli
-model_path = /home/nexus/whisper.cpp/models/ggml-tiny.bin
+model_path = /home/nexus/whisper.cpp/models/ggml-base.bin
 
