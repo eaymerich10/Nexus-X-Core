@@ -19,7 +19,7 @@ class SpeechService:
         result = subprocess.run([
             "sox", input_file,
             "-c", "1",
-            "-r", "16000",
+            "-r", "48000",
             self.wav_file
         ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         print("🎛️ [DEBUG] STDOUT:", result.stdout.decode())

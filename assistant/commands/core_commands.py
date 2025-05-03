@@ -85,11 +85,11 @@ def handle_core_command(cmd, args, ctx):
             temperature = get_temperature()
             logger.info("[system] Estado consultado por el usuario")
             return (
-                f"🧠 Mode: {ctx.get_mode()}\n"
-                f"🌍 Language: {ctx.get_lang()}\n"
-                f"⚙️ Provider: {ctx.get_provider()}\n"
-                f"🌡️ Temperature: {temperature}\n"
-                f"🕓 Time: {datetime.now().strftime('%H:%M:%S')}"
+                f"🧠 Modo: {ctx.get_mode()}\n"
+                f"🌍 Idioma: {ctx.get_lang()}\n"
+                f"⚙️ Núcleo IA: {ctx.get_provider()}\n"
+                f"🌡️ Temperatura: {temperature}\n"
+                f"🕓 Hora: {datetime.now().strftime('%H:%M:%S')}"
             )
 
     elif cmd == "/reiniciar":

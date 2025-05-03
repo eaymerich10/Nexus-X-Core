@@ -5,28 +5,49 @@ import platform
 import pvporcupine
 import pyaudio
 
+from dotenv import load_dotenv
 from assistant.context import ContextManager
 from assistant.commands.router import handle_command
 from services.ai_provider import get_response
-from assistant.utils.settings_manager import save_mode_to_config, save_lang_to_config, save_provider_to_config, load_settings
+from assistant.utils.settings_manager import (
+    save_mode_to_config, load_settings
+)
 from services.speech.speech_service import SpeechService
 from services.speech.tts_service import TTSService
 
+VOICE_COMMAND_PATTERNS = [
+    ("cambiar modo a", "/modo {value}"),
+    ("mi idioma es", "/lang {value}"),
+    ("cambiar proveedor a", "/proveedor {value}"),
+    ("recuerda", "/recordar {value}"),
+    ("cambiar entrada a", "/entrada {value}"),
+]
+
+FIXED_COMMANDS = {
+    "dime el estado": "/estado",
+    "dime en el estado": "/estado",
+    "muéstrame el estado": "/estado",
+    "reinicia": "/reiniciar",
+    "reiniciar asistente": "/reiniciar",
+    "modos disponibles": "/modos",
+    "lista de modos": "/modos",
+}
+
 def preprocess_response(text):
-    """Preprocesa la respuesta: reemplaza números por palabras dígito a dígito."""
-    digit_map = {
-        '0': "cero", '1': "uno", '2': "dos", '3': "tres", '4': "cuatro",
-        '5': "cinco", '6': "seis", '7': "siete", '8': "ocho", '9': "nueve"
-    }
+    digit_map = {'0': "cero", '1': "uno", '2': "dos", '3': "tres", '4': "cuatro",
+                 '5': "cinco", '6': "seis", '7': "siete", '8': "ocho", '9': "nueve"}
+    return "".join(digit_map[c] + " " if c.isdigit() else c for c in text).strip()
 
-    result = ""
-    for char in text:
-        if char.isdigit():
-            result += digit_map[char] + " "
-        else:
-            result += char
-
-    return result.strip()
+def map_voice_phrase_to_command(phrase):
+    phrase = phrase.lower().strip()
+    for key, command in FIXED_COMMANDS.items():
+        if key in phrase:
+            return command
+    for trigger, template in VOICE_COMMAND_PATTERNS:
+        if trigger in phrase:
+            value = phrase.split(trigger, 1)[-1].strip()
+            return template.format(value=value)
+    return phrase
 
 def main_loop(mode=None, lang=None):
     default_mode, default_lang, default_provider, default_input_method, default_whisper_path, default_model_path = load_settings()
@@ -38,17 +59,10 @@ def main_loop(mode=None, lang=None):
     ctx.set_mode(mode)
 
     tts_service = TTSService()
-    speech_service = SpeechService(
-        whisper_path=default_whisper_path,
-        model_path=default_model_path
-    )
+    speech_service = SpeechService(whisper_path=default_whisper_path, model_path=default_model_path)
 
     if input_method == "voice":
-        # Configuración de wakeword
-        import os
-        from dotenv import load_dotenv
         load_dotenv()
-
         if platform.machine() == 'x86_64':
             ACCESS_KEY = os.getenv("ACCESS_KEY_UBUNTU")
             KEYWORD_PATH = os.getenv("KEYWORD_PATH_UBUNTU")
@@ -60,14 +74,13 @@ def main_loop(mode=None, lang=None):
 
         porcupine = pvporcupine.create(
             access_key=ACCESS_KEY,
-            keyword_paths=[KEYWORD_PATH]
+            keyword_paths=[KEYWORD_PATH],
+            sensitivities=[0.8]  # aquí aumentamos la sensibilidad
         )
         pa = pyaudio.PyAudio()
         audio_stream = pa.open(
-            rate=porcupine.sample_rate,
-            channels=1,
-            format=pyaudio.paInt16,
-            input=True,
+            rate=porcupine.sample_rate, channels=1,
+            format=pyaudio.paInt16, input=True,
             frames_per_buffer=porcupine.frame_length
         )
         print("🎤 NEXUS-X Core arrancado en modo voz (wakeword integrado).\n")
@@ -94,9 +107,8 @@ def main_loop(mode=None, lang=None):
                     continue
 
                 print("✅ Activación detectada. Grabando...")
-
                 frames = []
-                record_seconds = 4  # puedes ajustar la duración
+                record_seconds = 5
                 for _ in range(0, int(porcupine.sample_rate / porcupine.frame_length * record_seconds)):
                     data = audio_stream.read(porcupine.frame_length, exception_on_overflow=False)
                     frames.append(data)
@@ -118,58 +130,39 @@ def main_loop(mode=None, lang=None):
                 print("NEXUS-X Core: Goodbye.")
                 break
 
-            lower_input = user_input.lower()
-            if "me llamo" in lower_input:
-                name = lower_input.split("me llamo")[-1].strip().split()[0]
-                ctx.identity_memory.set("name", name)
-                print(f"💾 [MEMORIA] Nombre guardado: {name}")
-
-            if "mis intereses son" in lower_input:
-                interests = lower_input.split("mis intereses son")[-1].strip()
-                ctx.identity_memory.set("interests", interests)
-                print(f"💾 [MEMORIA] Intereses guardados: {interests}")
-
-            if "mi idioma es" in lower_input:
-                language = lower_input.split("mi idioma es")[-1].strip().split()[0]
-                ctx.identity_memory.set("preferred_language", language)
-                print(f"💾 [MEMORIA] Idioma guardado: {language}")
+            mapped_input = map_voice_phrase_to_command(user_input)
 
             if ctx.get_pending_action():
-                result = handle_command(user_input, ctx=ctx)
+                result = handle_command(mapped_input, ctx=ctx)
                 if result:
                     print("NEXUS-X Core:", result)
-                    processed_result = preprocess_response(result)
-                    tts_service.speak(processed_result)
+                    tts_service.speak(preprocess_response(result))
                 continue
 
-            if user_input.startswith("/"):
-                result = handle_command(user_input, ctx=ctx)
-                if user_input.startswith("/modo"):
+            if mapped_input.startswith("/"):
+                result = handle_command(mapped_input, ctx=ctx)
+                if mapped_input.startswith("/modo"):
                     save_mode_to_config(ctx.get_mode())
                 if result:
                     print("NEXUS-X Core:", result)
-                    processed_result = preprocess_response(result)
-                    tts_service.speak(processed_result)
+                    tts_service.speak(preprocess_response(result))
             else:
                 name = ctx.identity_memory.get("name")
                 interests = ctx.identity_memory.get("interests")
                 max_tokens = 80 if input_method == "voice" else 300
                 result = get_response(
-                    ctx.get_history(),
-                    user_input,
-                    mode=ctx.get_mode(),
-                    lang=ctx.get_lang(),
+                    ctx.get_history(), mapped_input,
+                    mode=ctx.get_mode(), lang=ctx.get_lang(),
                     max_tokens=max_tokens,
                     extra_context=f"El usuario se llama {name}." if name else "",
                     extra_interests=f"Tiene intereses en: {interests}." if interests else ""
                 )
 
-                ctx.add_message("user", user_input)
+                ctx.add_message("user", mapped_input)
                 ctx.add_message("assistant", result)
 
                 print("NEXUS-X Core:", result)
-                processed_result = preprocess_response(result)
-                tts_service.speak(processed_result)
+                tts_service.speak(preprocess_response(result))
 
     except KeyboardInterrupt:
         print("🛑 Interrumpido por el usuario.")
