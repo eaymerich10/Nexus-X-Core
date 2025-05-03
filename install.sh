@@ -3,15 +3,16 @@
 set -e
 
 PROJECT_DIR=$(dirname "$(realpath "$0")")
-PYTHON_EXEC="$PROJECT_DIR/.venv311/bin/python"
+VENV_DIR="$PROJECT_DIR/.venv311"
+PYTHON_EXEC="$VENV_DIR/bin/python"
 SERVICE_NAME="nexus-x-core"
 
 echo "🚀 Instalando NEXUS-X Core..."
 
 # Crear entorno virtual si no existe
-if [ ! -d "$PROJECT_DIR/.venv311" ]; then
+if [ ! -d "$VENV_DIR" ]; then
     echo "🐍 Creando entorno virtual..."
-    python3 -m venv "$PROJECT_DIR/.venv311"
+    python3 -m venv "$VENV_DIR"
     "$PYTHON_EXEC" -m pip install --upgrade pip
 fi
 
@@ -31,10 +32,11 @@ After=network.target
 
 [Service]
 WorkingDirectory=$PROJECT_DIR
-ExecStart=$PYTHON_EXEC scripts/run.py
+ExecStart=$PYTHON_EXEC -m scripts.run
 Restart=always
 User=$USER
 Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONPATH=$PROJECT_DIR
 
 [Install]
 WantedBy=multi-user.target
@@ -44,7 +46,7 @@ EOL
 echo "🔄 Habilitando y arrancando servicio..."
 sudo systemctl daemon-reload
 sudo systemctl enable "$SERVICE_NAME"
-sudo systemctl start "$SERVICE_NAME"
+sudo systemctl restart "$SERVICE_NAME"
 
 echo "✅ NEXUS-X Core instalado y ejecutándose como servicio."
 echo "👉 Usa 'sudo systemctl status $SERVICE_NAME' para comprobar el estado."
