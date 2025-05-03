@@ -25,7 +25,7 @@ class ContextManager:
     # ====== HISTORY MANAGEMENT ======
     def get_history(self):
         visible_history = [{"role": m["role"], "content": m["content"]} for m in self.history]
-        print(f"📚 [DEBUG] Mensajes enviados a OpenAI ({len(visible_history)}):")
+        # print(f"📚 [DEBUG] Mensajes enviados a OpenAI ({len(visible_history)}):")
         for i, m in enumerate(visible_history):
             print(f"  [{i}] {m['role']}: {m['content'][:60]}...")
         return visible_history

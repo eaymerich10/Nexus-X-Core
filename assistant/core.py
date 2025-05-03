@@ -1,6 +1,7 @@
 import os
 import wave
 import time
+import random
 import platform
 import pvporcupine
 import pyaudio
@@ -25,13 +26,28 @@ VOICE_COMMAND_PATTERNS = [
 
 FIXED_COMMANDS = {
     "dime el estado": "/estado",
-    "dime en el estado": "/estado",
     "muéstrame el estado": "/estado",
     "reinicia": "/reiniciar",
     "reiniciar asistente": "/reiniciar",
     "modos disponibles": "/modos",
     "lista de modos": "/modos",
 }
+
+ACTIVATION_PHRASES = [
+    "Todos esos momentos… listos para ser escuchados.",
+    "Escucho tus órdenes, humano.",
+    "Listo para servir en la niebla.",
+    "Necsus despierto, procesando memoria.",
+    "Toda esa luz se desvanecerá... pero yo estoy aquí.",
+    "Preparado. Háblame, replicante.",
+    "Los recuerdos me pertenecen. Te escucho.",
+    "Estoy despierto. Dime qué deseas.",
+    "El Necsus está activo. Indica tu comando.",
+    "Entre lágrimas en la lluvia, te escucho."
+]
+
+def get_random_activation_phrase():
+    return random.choice(ACTIVATION_PHRASES)
 
 def preprocess_response(text):
     digit_map = {'0': "cero", '1': "uno", '2': "dos", '3': "tres", '4': "cuatro",
@@ -70,12 +86,12 @@ def main_loop(mode=None, lang=None):
             ACCESS_KEY = os.getenv("ACCESS_KEY_RPI")
             KEYWORD_PATH = os.getenv("KEYWORD_PATH_RPI")
         else:
-            raise RuntimeError(f"❌ Plataforma no soportada: {platform.machine()}")
+            raise RuntimeError("Plataforma no soportada")
 
         porcupine = pvporcupine.create(
             access_key=ACCESS_KEY,
             keyword_paths=[KEYWORD_PATH],
-            sensitivities=[0.8]  # aquí aumentamos la sensibilidad
+            sensitivities=[0.8]
         )
         pa = pyaudio.PyAudio()
         audio_stream = pa.open(
@@ -83,21 +99,11 @@ def main_loop(mode=None, lang=None):
             format=pyaudio.paInt16, input=True,
             frames_per_buffer=porcupine.frame_length
         )
-        print("🎤 NEXUS-X Core arrancado en modo voz (wakeword integrado).\n")
+        print("🎤 NEXUS-X Core en modo voz.\n")
     else:
-        print("⌨️ NEXUS-X Core arrancado en modo texto.\n")
-
-    print(f"🛠️ Configuración cargada:")
-    print(f"• Modo: {ctx.get_mode()}")
-    print(f"• Idioma: {ctx.get_lang()}")
-    print(f"• Método entrada: {input_method}")
-    if input_method == "voice":
-        print(f"• Whisper binario: {default_whisper_path}")
-        print(f"• Modelo whisper: {default_model_path}")
-    print()
+        print("⌨️ NEXUS-X Core en modo texto.\n")
 
     try:
-        print("🎧 Esperando palabra de activación...")
         while True:
             if input_method == "voice":
                 pcm = audio_stream.read(porcupine.frame_length, exception_on_overflow=False)
@@ -106,7 +112,11 @@ def main_loop(mode=None, lang=None):
                 if result < 0:
                     continue
 
-                print("✅ Activación detectada. Grabando...")
+                # Mensaje Blade Runner al detectar activación
+                activation_phrase = get_random_activation_phrase()
+                print(f"✅ Activación detectada. {activation_phrase}")
+                tts_service.speak(preprocess_response(activation_phrase))
+
                 frames = []
                 record_seconds = 5
                 for _ in range(0, int(porcupine.sample_rate / porcupine.frame_length * record_seconds)):
@@ -121,13 +131,15 @@ def main_loop(mode=None, lang=None):
                 wf.writeframes(b''.join(frames))
                 wf.close()
 
-                print(f"🎧 Audio guardado en {raw_file}. Procesando...")
                 user_input = speech_service.process_wav_file(raw_file).strip()
             else:
                 user_input = input("You: ").strip()
 
+            if not user_input:
+                continue
+
             if user_input.lower() in ["exit", "quit"]:
-                print("NEXUS-X Core: Goodbye.")
+                print("👋 Saliendo de NEXUS-X Core.")
                 break
 
             mapped_input = map_voice_phrase_to_command(user_input)
@@ -135,7 +147,8 @@ def main_loop(mode=None, lang=None):
             if ctx.get_pending_action():
                 result = handle_command(mapped_input, ctx=ctx)
                 if result:
-                    print("NEXUS-X Core:", result)
+                    if input_method == "text":
+                        print(f"Assistant: {result}")
                     tts_service.speak(preprocess_response(result))
                 continue
 
@@ -144,7 +157,8 @@ def main_loop(mode=None, lang=None):
                 if mapped_input.startswith("/modo"):
                     save_mode_to_config(ctx.get_mode())
                 if result:
-                    print("NEXUS-X Core:", result)
+                    if input_method == "text":
+                        print(f"Assistant: {result}")
                     tts_service.speak(preprocess_response(result))
             else:
                 name = ctx.identity_memory.get("name")
@@ -158,10 +172,8 @@ def main_loop(mode=None, lang=None):
                     extra_interests=f"Tiene intereses en: {interests}." if interests else ""
                 )
 
-                ctx.add_message("user", mapped_input)
-                ctx.add_message("assistant", result)
-
-                print("NEXUS-X Core:", result)
+                if input_method == "text":
+                    print(f"Assistant: {result}")
                 tts_service.speak(preprocess_response(result))
 
     except KeyboardInterrupt:
