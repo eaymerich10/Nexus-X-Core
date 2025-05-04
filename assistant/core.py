@@ -38,6 +38,19 @@ def map_voice_phrase_to_command(phrase):
             return template.format(value=value)
     return phrase
 
+def stop_and_reopen_audio(pa, porcupine, audio_stream):
+    """Detiene y reabre el flujo de audio para evitar interferencia al grabar después del TTS."""
+    audio_stream.stop_stream()
+    audio_stream.close()
+    print("🔇 Micrófono detenido temporalmente.")
+    new_stream = pa.open(
+        rate=porcupine.sample_rate, channels=1,
+        format=pyaudio.paInt16, input=True,
+        frames_per_buffer=porcupine.frame_length
+    )
+    print("🎙 Micrófono reabierto y listo para grabar.")
+    return new_stream
+
 def main_loop(mode=None, lang=None):
     """
     Main loop for the NEXUS-X Core assistant.
@@ -126,12 +139,7 @@ def main_loop(mode=None, lang=None):
                 activation_phrase = get_random_activation_phrase()
                 print(f"✅ Activación detectada. {activation_phrase}")
                 tts_service.speak(preprocess_response(activation_phrase))
-                audio_stream.stop_stream()
-                audio_stream = pa.open(
-                    rate=porcupine.sample_rate, channels=1,
-                    format=pyaudio.paInt16, input=True,
-                    frames_per_buffer=porcupine.frame_length
-                )
+                audio_stream = stop_and_reopen_audio(pa, porcupine, audio_stream)
                 print("Escuchando...")
                 frames = []
                 record_seconds = 5
