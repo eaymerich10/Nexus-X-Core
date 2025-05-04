@@ -8,7 +8,7 @@ from services.speech.tts_checker import check_tts_model
 
 class TTSService:
     def __init__(self):
-        model_path = os.path.expanduser("~/.local/share/tts/tts_models/es/css10/vits")
+        model_path = os.path.expanduser("~/.local/share/tts/tts_models--es--css10--vits")
         check_tts_model(model_path)
 
         # Notificar en la GUI que ya está listo
