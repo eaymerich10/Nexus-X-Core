@@ -16,14 +16,5 @@ FIXED_COMMANDS = {
 }
 
 ACTIVATION_PHRASES = [
-    "Todos esos momentos… listos para ser escuchados.",
-    "Escucho tus órdenes, humano.",
-    "Listo para servir en la niebla.",
-    "Necsus despierto, procesando memoria.",
-    "Toda esa luz se desvanecerá... pero yo estoy aquí.",
-    "Preparado. Háblame, replicante.",
-    "Los recuerdos me pertenecen. Te escucho.",
-    "Estoy despierto. Dime qué deseas.",
-    "El Necsus está activo. Indica tu comando.",
-    "Entre lágrimas en la lluvia, te escucho."
+    "Activado",
 ]
