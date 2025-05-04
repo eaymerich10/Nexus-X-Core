@@ -15,36 +15,9 @@ from assistant.utils.settings_manager import (
 )
 from services.speech.speech_service import SpeechService
 from services.speech.tts_service import TTSService
+from assistant.utils.constants import VOICE_COMMAND_PATTERNS, FIXED_COMMANDS, ACTIVATION_PHRASES
 
-VOICE_COMMAND_PATTERNS = [
-    ("cambiar modo a", "/modo {value}"),
-    ("mi idioma es", "/lang {value}"),
-    ("cambiar proveedor a", "/proveedor {value}"),
-    ("recuerda", "/recordar {value}"),
-    ("cambiar entrada a", "/entrada {value}"),
-]
 
-FIXED_COMMANDS = {
-    "dime el estado": "/estado",
-    "muéstrame el estado": "/estado",
-    "reinicia": "/reiniciar",
-    "reiniciar asistente": "/reiniciar",
-    "modos disponibles": "/modos",
-    "lista de modos": "/modos",
-}
-
-ACTIVATION_PHRASES = [
-    "Todos esos momentos… listos para ser escuchados.",
-    "Escucho tus órdenes, humano.",
-    "Listo para servir en la niebla.",
-    "Necsus despierto, procesando memoria.",
-    "Toda esa luz se desvanecerá... pero yo estoy aquí.",
-    "Preparado. Háblame, replicante.",
-    "Los recuerdos me pertenecen. Te escucho.",
-    "Estoy despierto. Dime qué deseas.",
-    "El Necsus está activo. Indica tu comando.",
-    "Entre lágrimas en la lluvia, te escucho."
-]
 
 def get_random_activation_phrase():
     return random.choice(ACTIVATION_PHRASES)
@@ -128,7 +101,7 @@ def main_loop(mode=None, lang=None):
         porcupine = pvporcupine.create(
             access_key=ACCESS_KEY,
             keyword_paths=[KEYWORD_PATH],
-            sensitivities=[0.5]
+            sensitivities=[0.7]
         )
         pa = pyaudio.PyAudio()
         audio_stream = pa.open(
@@ -153,7 +126,7 @@ def main_loop(mode=None, lang=None):
                 activation_phrase = get_random_activation_phrase()
                 print(f"✅ Activación detectada. {activation_phrase}")
                 tts_service.speak(preprocess_response(activation_phrase))
-
+                print("Escuchando...")
                 frames = []
                 record_seconds = 5
                 for _ in range(0, int(porcupine.sample_rate / porcupine.frame_length * record_seconds)):
@@ -176,7 +149,7 @@ def main_loop(mode=None, lang=None):
                 continue
 
             if user_input.lower() in ["exit", "quit"]:
-                print("👋 Saliendo de NEXUS-X Core.")
+                print("Saliendo de NEXUS-X Core.")
                 break
 
             mapped_input = map_voice_phrase_to_command(user_input)
