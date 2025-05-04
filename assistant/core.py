@@ -126,7 +126,12 @@ def main_loop(mode=None, lang=None):
                 activation_phrase = get_random_activation_phrase()
                 print(f"✅ Activación detectada. {activation_phrase}")
                 tts_service.speak(preprocess_response(activation_phrase))
-                time.sleep(2)
+                audio_stream.stop_stream()
+                audio_stream = pa.open(
+                    rate=porcupine.sample_rate, channels=1,
+                    format=pyaudio.paInt16, input=True,
+                    frames_per_buffer=porcupine.frame_length
+                )
                 print("Escuchando...")
                 frames = []
                 record_seconds = 5
