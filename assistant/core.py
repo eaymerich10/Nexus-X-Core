@@ -126,6 +126,7 @@ def main_loop(mode=None, lang=None):
                 activation_phrase = get_random_activation_phrase()
                 print(f"✅ Activación detectada. {activation_phrase}")
                 tts_service.speak(preprocess_response(activation_phrase))
+                time.sleep(1)
                 print("Escuchando...")
                 frames = []
                 record_seconds = 5
