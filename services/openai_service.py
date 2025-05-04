@@ -24,6 +24,7 @@ def ask_openai(
         if extra_interests:
             system_prompt += f"\nIntereses conocidos: {extra_interests}"
 
+        print(f"[USER] {user_input}")
         response = client.chat.completions.create(
             model=model,
             messages=[{"role": "system", "content": system_prompt}] + history + [{"role": "user", "content": user_input}],
