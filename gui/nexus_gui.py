@@ -1,3 +1,4 @@
+import platform
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
@@ -13,7 +14,11 @@ import sys
 
 # GLOBAL
 gui_instance = None
-
+# Determina la ruta de la fuente según la arquitectura
+if platform.machine() == 'x86_64':
+    FONT_PATH = '/usr/share/fonts/truetype/ubuntu/UbuntuMono[wght].ttf'
+elif platform.machine() == 'aarch64':
+    FONT_PATH = '/usr/share/fonts/truetype/liberation2/LiberationMono-Regular.ttf'
 class NexusGUI(BoxLayout):
     chat_log = StringProperty("")
     status = StringProperty("Esperando...")
@@ -24,10 +29,8 @@ class NexusGUI(BoxLayout):
         self.padding = 20
         self.spacing = 10
 
-        # Fondo general oscuro
         Window.clearcolor = (0.03, 0.03, 0.03, 1)
 
-        # Fondo sólido y línea superior azul
         with self.canvas.before:
             Color(0.08, 0.08, 0.08, 1)
             self.rect = Rectangle(size=self.size, pos=self.pos)
@@ -37,19 +40,18 @@ class NexusGUI(BoxLayout):
             Color(0.3, 0.8, 1, 1)
             self.top_line = Line(points=[self.x, self.top, self.right, self.top], width=1.2)
 
-        # Barra superior
         top_bar = BoxLayout(orientation='horizontal', size_hint=(1, 0.05))
         self.system_label = Label(
             text="NEXUS-X SYSTEM",
             font_size=14,
-            font_name='/usr/share/fonts/truetype/ubuntu/UbuntuMono[wght].ttf',
+            font_name=FONT_PATH,
             color=(0.3, 0.8, 1, 1),
             halign='left', valign='middle'
         )
         self.time_label = Label(
             text=self.get_current_time(),
             font_size=14,
-            font_name='/usr/share/fonts/truetype/ubuntu/UbuntuMono[wght].ttf',
+            font_name=FONT_PATH,
             color=(0.3, 0.8, 1, 1),
             halign='right', valign='middle'
         )
@@ -57,12 +59,11 @@ class NexusGUI(BoxLayout):
         top_bar.add_widget(self.time_label)
         self.add_widget(top_bar)
 
-        # Área de chat
         self.chat_area = TextInput(
             text=self.chat_log,
             readonly=True,
             font_size=14,
-            font_name='/usr/share/fonts/truetype/ubuntu/UbuntuMono[wght].ttf',
+            font_name=FONT_PATH,
             foreground_color=(0.3, 0.8, 1, 1),
             background_color=(0, 0, 0, 1),
             size_hint=(1, 0.8),
@@ -71,13 +72,12 @@ class NexusGUI(BoxLayout):
         )
         self.add_widget(self.chat_area)
 
-        # Barra inferior
         self.bottom_bar = BoxLayout(orientation='horizontal', size_hint=(1, 0.1), spacing=10)
 
         command_button = Button(
             text="Comandos",
             font_size=12,
-            font_name='/usr/share/fonts/truetype/ubuntu/UbuntuMono[wght].ttf',
+            font_name=FONT_PATH,
             background_normal='',
             background_color=(0, 0, 0, 1),
             color=(0.3, 0.8, 1, 1),
@@ -89,7 +89,7 @@ class NexusGUI(BoxLayout):
         self.status_label = Label(
             text=f"Estado: {self.status}",
             font_size=14,
-            font_name='/usr/share/fonts/truetype/ubuntu/UbuntuMono[wght].ttf',
+            font_name=FONT_PATH,
             color=(1, 0.4, 0.4, 1),
             halign='center', valign='middle',
             size_hint=(0.6, 1)
@@ -99,6 +99,7 @@ class NexusGUI(BoxLayout):
         shutdown_btn = Button(
             text="Apagar",
             font_size=12,
+            font_name=FONT_PATH,
             background_normal='',
             background_color=(0, 0, 0, 1),
             color=(1, 0.4, 0.4, 1),
@@ -148,6 +149,7 @@ class NexusGUI(BoxLayout):
             btn = Button(
                 text=cmd,
                 font_size=12,
+                font_name=FONT_PATH,
                 background_normal='',
                 background_color=(0, 0, 0, 1),
                 color=(0.3, 0.8, 1, 1),
@@ -172,12 +174,14 @@ class NexusGUI(BoxLayout):
         label = Label(
             text="¿Estás seguro de apagar el asistente?",
             font_size=14,
+            font_name=FONT_PATH,
             color=(1, 0.4, 0.4, 1)
         )
         button_bar = BoxLayout(orientation='horizontal', spacing=10)
         yes_btn = Button(
             text="Sí",
             font_size=12,
+            font_name=FONT_PATH,
             background_normal='',
             background_color=(0, 0, 0, 1),
             color=(1, 0.4, 0.4, 1)
@@ -185,6 +189,7 @@ class NexusGUI(BoxLayout):
         no_btn = Button(
             text="No",
             font_size=12,
+            font_name=FONT_PATH,
             background_normal='',
             background_color=(0, 0, 0, 1),
             color=(0.3, 0.8, 1, 1)
