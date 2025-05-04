@@ -66,6 +66,43 @@ def map_voice_phrase_to_command(phrase):
     return phrase
 
 def main_loop(mode=None, lang=None):
+    """
+    Main loop for the NEXUS-X Core assistant.
+
+    This function initializes the assistant's context, services, and input method,
+    and enters a loop to process user input in either voice or text mode. It handles
+    activation, user commands, and responses, and ensures proper resource cleanup
+    upon exit.
+
+    Args:
+        mode (str, optional): The mode of operation for the assistant (e.g., "chat", "command").
+                              Defaults to the mode specified in the settings.
+        lang (str, optional): The language for the assistant. Defaults to the language
+                              specified in the settings.
+
+    Raises:
+        RuntimeError: If the platform is not supported for voice input.
+
+    Behavior:
+        - In "voice" mode:
+            - Listens for a wake word using Porcupine.
+            - Records audio after activation and processes it for commands or queries.
+        - In "text" mode:
+            - Accepts user input via the console.
+
+    Commands:
+        - Special commands (e.g., starting with "/") are handled as system commands.
+        - General input is processed based on the assistant's mode and context.
+
+    Exit Conditions:
+        - The loop exits when the user inputs "exit" or "quit".
+        - Proper cleanup of audio resources and services is performed.
+
+    Notes:
+        - The assistant uses environment variables for voice mode configuration.
+        - The assistant's behavior is influenced by user-specific context such as name
+          and interests, if available.
+    """
     default_mode, default_lang, default_provider, default_input_method, default_whisper_path, default_model_path = load_settings()
     mode = mode or default_mode
     lang = lang or default_lang
@@ -91,7 +128,7 @@ def main_loop(mode=None, lang=None):
         porcupine = pvporcupine.create(
             access_key=ACCESS_KEY,
             keyword_paths=[KEYWORD_PATH],
-            sensitivities=[0.8]
+            sensitivities=[0.5]
         )
         pa = pyaudio.PyAudio()
         audio_stream = pa.open(
