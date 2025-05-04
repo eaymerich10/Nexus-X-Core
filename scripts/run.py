@@ -1,5 +1,8 @@
-from assistant.core import main_loop
+import threading
 import argparse
+
+from assistant.core import main_loop
+from gui.nexus_gui import start_gui
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Start NEXUS-X Core assistant.")
@@ -9,5 +12,11 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
-    print(f"🔊 NEXUS-X Core initialized. Starting main loop...")
-    main_loop(mode=args.mode, lang=args.lang)
+
+    # Lanza main_loop en segundo plano
+    backend_thread = threading.Thread(target=main_loop, kwargs={"mode": args.mode, "lang": args.lang}, daemon=True)
+    backend_thread.start()
+
+    print(f"🖥 Lanzando interfaz gráfica...")
+    # Kivy siempre en el hilo principal
+    start_gui()

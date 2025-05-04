@@ -4,3 +4,4 @@ requests
 TTS
 pvporcupine
 pyaudio
+kivy

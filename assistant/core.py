@@ -1,6 +1,5 @@
 import os
 import wave
-import time
 import random
 import platform
 import pvporcupine
@@ -16,8 +15,11 @@ from assistant.utils.settings_manager import (
 from services.speech.speech_service import SpeechService
 from services.speech.tts_service import TTSService
 from assistant.utils.constants import VOICE_COMMAND_PATTERNS, FIXED_COMMANDS, ACTIVATION_PHRASES
+import time
 
 
+# Import GUI update functions
+from gui.nexus_gui import update_gui_chat, update_gui_status, gui_instance
 
 def get_random_activation_phrase():
     return random.choice(ACTIVATION_PHRASES)
@@ -39,56 +41,23 @@ def map_voice_phrase_to_command(phrase):
     return phrase
 
 def stop_and_reopen_audio(pa, porcupine, audio_stream):
-    """Detiene y reabre el flujo de audio para evitar interferencia al grabar después del TTS."""
     audio_stream.stop_stream()
     audio_stream.close()
     print("🔇 Micrófono detenido temporalmente.")
+    update_gui_status("Micrófono detenido")
     new_stream = pa.open(
         rate=porcupine.sample_rate, channels=1,
         format=pyaudio.paInt16, input=True,
         frames_per_buffer=porcupine.frame_length
     )
     print("🎙 Micrófono reabierto y listo para grabar.")
+    update_gui_status("Micrófono reabierto")
     return new_stream
 
 def main_loop(mode=None, lang=None):
-    """
-    Main loop for the NEXUS-X Core assistant.
-
-    This function initializes the assistant's context, services, and input method,
-    and enters a loop to process user input in either voice or text mode. It handles
-    activation, user commands, and responses, and ensures proper resource cleanup
-    upon exit.
-
-    Args:
-        mode (str, optional): The mode of operation for the assistant (e.g., "chat", "command").
-                              Defaults to the mode specified in the settings.
-        lang (str, optional): The language for the assistant. Defaults to the language
-                              specified in the settings.
-
-    Raises:
-        RuntimeError: If the platform is not supported for voice input.
-
-    Behavior:
-        - In "voice" mode:
-            - Listens for a wake word using Porcupine.
-            - Records audio after activation and processes it for commands or queries.
-        - In "text" mode:
-            - Accepts user input via the console.
-
-    Commands:
-        - Special commands (e.g., starting with "/") are handled as system commands.
-        - General input is processed based on the assistant's mode and context.
-
-    Exit Conditions:
-        - The loop exits when the user inputs "exit" or "quit".
-        - Proper cleanup of audio resources and services is performed.
-
-    Notes:
-        - The assistant uses environment variables for voice mode configuration.
-        - The assistant's behavior is influenced by user-specific context such as name
-          and interests, if available.
-    """
+    # while gui_instance is None:
+    #     print("⏳ Esperando que la interfaz gráfica se inicialice...")
+    #     time.sleep(0.5)
     default_mode, default_lang, default_provider, default_input_method, default_whisper_path, default_model_path = load_settings()
     mode = mode or default_mode
     lang = lang or default_lang
@@ -123,8 +92,10 @@ def main_loop(mode=None, lang=None):
             frames_per_buffer=porcupine.frame_length
         )
         print("🎤 NEXUS-X Core en modo voz.\n")
+        update_gui_status("Modo voz activado")
     else:
         print("⌨️ NEXUS-X Core en modo texto.\n")
+        update_gui_status("Modo texto activado")
 
     try:
         while True:
@@ -135,12 +106,14 @@ def main_loop(mode=None, lang=None):
                 if result < 0:
                     continue
 
-                # Mensaje Blade Runner al detectar activación
                 activation_phrase = get_random_activation_phrase()
                 print(f"✅ Activación detectada. {activation_phrase}")
+                update_gui_chat("Sistema", activation_phrase)
+                update_gui_status("Escuchando...")
+
                 tts_service.speak(preprocess_response(activation_phrase))
                 audio_stream = stop_and_reopen_audio(pa, porcupine, audio_stream)
-                print("Escuchando...")
+
                 frames = []
                 record_seconds = 5
                 for _ in range(0, int(porcupine.sample_rate / porcupine.frame_length * record_seconds)):
@@ -156,14 +129,18 @@ def main_loop(mode=None, lang=None):
                 wf.close()
 
                 user_input = speech_service.process_wav_file(raw_file).strip()
+                update_gui_chat("Tú", user_input)
             else:
                 user_input = input("You: ").strip()
+                update_gui_chat("Tú", user_input)
 
             if not user_input:
                 continue
 
             if user_input.lower() in ["exit", "quit"]:
                 print("Saliendo de NEXUS-X Core.")
+                update_gui_chat("Sistema", "Saliendo de NEXUS-X Core.")
+                update_gui_status("Detenido")
                 break
 
             mapped_input = map_voice_phrase_to_command(user_input)
@@ -171,9 +148,10 @@ def main_loop(mode=None, lang=None):
             if ctx.get_pending_action():
                 result = handle_command(mapped_input, ctx=ctx)
                 if result:
-                    if input_method == "text":
-                        print(f"Assistant: {result}")
+                    update_gui_chat("NEXUS-X", result)
+                    update_gui_status("Hablando...")
                     tts_service.speak(preprocess_response(result))
+                    update_gui_status("Esperando...")
                 continue
 
             if mapped_input.startswith("/"):
@@ -181,13 +159,15 @@ def main_loop(mode=None, lang=None):
                 if mapped_input.startswith("/modo"):
                     save_mode_to_config(ctx.get_mode())
                 if result:
-                    if input_method == "text":
-                        print(f"Assistant: {result}")
+                    update_gui_chat("NEXUS-X", result)
+                    update_gui_status("Hablando...")
                     tts_service.speak(preprocess_response(result))
+                    update_gui_status("Esperando...")
             else:
                 name = ctx.identity_memory.get("name")
                 interests = ctx.identity_memory.get("interests")
                 max_tokens = 80 if input_method == "voice" else 300
+                update_gui_status("Pensando...")
                 result = get_response(
                     ctx.get_history(), mapped_input,
                     mode=ctx.get_mode(), lang=ctx.get_lang(),
@@ -195,13 +175,15 @@ def main_loop(mode=None, lang=None):
                     extra_context=f"El usuario se llama {name}." if name else "",
                     extra_interests=f"Tiene intereses en: {interests}." if interests else ""
                 )
-
-                if input_method == "text":
-                    print(f"Assistant: {result}")
+                update_gui_chat("NEXUS-X", result)
+                update_gui_status("Hablando...")
                 tts_service.speak(preprocess_response(result))
+                update_gui_status("Esperando...")
 
     except KeyboardInterrupt:
         print("🛑 Interrumpido por el usuario.")
+        update_gui_chat("Sistema", "🛑 Interrumpido por el usuario.")
+        update_gui_status("Detenido")
     finally:
         if input_method == "voice":
             audio_stream.stop_stream()
@@ -209,3 +191,4 @@ def main_loop(mode=None, lang=None):
             pa.terminate()
             porcupine.delete()
             print("✅ Recursos liberados correctamente.")
+            update_gui_status("Recursos liberados")
