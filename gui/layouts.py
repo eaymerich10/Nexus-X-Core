@@ -102,8 +102,9 @@ class NexusGUI(BoxLayout):
 
         shutdown_btn = FancyButton(
             text="Apagar",
-            color=(1, 0, 0, 1),  # texto rojo fuerte
-            background_color=(0, 0, 0, 1)  # fondo negro
+            text_color=[1, 0.4, 0.4, 1],  # rojo
+            hover_color=[0.5, 0, 0, 1],   # rojo oscuro al pasar
+            text_hover_color=[1, 1, 1, 1]  # blanco al pasar
         )
         shutdown_btn.bind(on_release=lambda x: confirm_shutdown(self))
 
