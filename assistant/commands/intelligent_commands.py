@@ -24,7 +24,7 @@ def handle_intelligent_command(cmd, args, ctx):
                 reminder_id = pending["reminder_id"]
                 success = delete_reminder(reminder_id)
                 ctx.clear_pending_action()
-                return "🗑️ Reminder deleted." if success else "❌ Failed to delete reminder."
+                return "Reminder deleted." if success else "Failed to delete reminder."
         elif cmd.lower() == "no":
             ctx.clear_pending_action()
             return get_text("deletion_cancelled", lang)
@@ -37,7 +37,7 @@ def handle_intelligent_command(cmd, args, ctx):
             return "Please provide a reminder text."
         message = " ".join(args)
         success = add_reminder(user_id, message)
-        return "✅ Reminder saved." if success else "❌ Failed to save reminder."
+        return "Reminder saved." if success else "Failed to save reminder."
 
     elif cmd == "/ver":
         reminders = list_reminders(user_id)
@@ -48,7 +48,7 @@ def handle_intelligent_command(cmd, args, ctx):
             ctx.set_reminders_index(reminders)
 
         result = "\n".join([f"[{i+1}] {r['message']}" for i, r in enumerate(reminders)])
-        return f"📋 Pending Reminders:\n{result}"
+        return f"Pending Reminders:\n{result}"
 
     elif cmd == "/borrar":
         if not args:
@@ -65,9 +65,9 @@ def handle_intelligent_command(cmd, args, ctx):
                     reminder_text = reminders[int(reminder_number)-1]['message']
                     ctx.set_pending_action("delete_reminder", reminder_uuid, reminder_text)
                     question = get_text("confirm_delete", lang).format(reminder=reminder_text)
-                    return f"❓ {question}"
+                    return f"{question}"
                 else:
-                    return "❌ Invalid reminder number."
+                    return "Invalid reminder number."
 
         return "Error: context not available."
 

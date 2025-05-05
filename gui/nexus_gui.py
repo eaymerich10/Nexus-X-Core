@@ -14,16 +14,18 @@ import sys
 
 # GLOBAL
 gui_instance = None
-# Determina la ruta de la fuente según la arquitectura
+process_user_input_callback = None  # será enganchado externamente
+
 if platform.machine() == 'x86_64':
     FONT_PATH = '/usr/share/fonts/truetype/ubuntu/UbuntuMono[wght].ttf'
 elif platform.machine() == 'aarch64':
     FONT_PATH = '/usr/share/fonts/truetype/liberation2/LiberationMono-Regular.ttf'
+
 class NexusGUI(BoxLayout):
     chat_log = StringProperty("")
     status = StringProperty("Esperando...")
 
-    def __init__(self, **kwargs):
+    def __init__(self, input_method="text", **kwargs):
         super().__init__(**kwargs)
         self.orientation = 'vertical'
         self.padding = 20
@@ -66,11 +68,26 @@ class NexusGUI(BoxLayout):
             font_name=FONT_PATH,
             foreground_color=(0.3, 0.8, 1, 1),
             background_color=(0, 0, 0, 1),
-            size_hint=(1, 0.8),
+            size_hint=(1, 0.75),
             padding=[10, 10, 10, 10],
             cursor_blink=False
         )
         self.add_widget(self.chat_area)
+
+        if input_method == "text":
+            self.input_field = TextInput(
+                hint_text="Escribe aquí...",
+                multiline=False,
+                font_size=14,
+                font_name=FONT_PATH,
+                foreground_color=(0.7, 1, 0.7, 1),
+                background_color=(0.1, 0.1, 0.1, 1),
+                size_hint=(1, 0.08),
+                padding=[10, 10, 10, 10],
+                cursor_blink=True
+            )
+            self.input_field.bind(on_text_validate=self.on_enter_pressed)
+            self.add_widget(self.input_field)
 
         self.bottom_bar = BoxLayout(orientation='horizontal', size_hint=(1, 0.1), spacing=10)
 
@@ -165,7 +182,6 @@ class NexusGUI(BoxLayout):
             size_hint=(0.4, 0.6),
             background_color=(0, 0, 0, 1),
             separator_color=(0.3, 0.8, 1, 1),
-            title_color=(0.3, 0.8, 1, 1)
         )
         popup.open()
 
@@ -205,7 +221,6 @@ class NexusGUI(BoxLayout):
             size_hint=(0.4, 0.3),
             background_color=(0, 0, 0, 1),
             separator_color=(1, 0.4, 0.4, 1),
-            title_color=(1, 0.4, 0.4, 1)
         )
 
         yes_btn.bind(on_release=lambda x: self.start_shutdown_sequence(popup))
@@ -220,6 +235,8 @@ class NexusGUI(BoxLayout):
     def disable_interface(self):
         self.bottom_bar.disabled = True
         self.chat_area.disabled = True
+        if hasattr(self, 'input_field'):
+            self.input_field.disabled = True
 
     def run_countdown(self, seconds):
         if seconds > 0:
@@ -228,14 +245,24 @@ class NexusGUI(BoxLayout):
         else:
             Clock.schedule_once(lambda dt: sys.exit(), 1)
 
+    def on_enter_pressed(self, instance):
+        user_input = instance.text.strip()
+        if user_input and process_user_input_callback:
+            instance.text = ""
+            process_user_input_callback(user_input)
+
 class NexusApp(App):
+    def __init__(self, input_method="text", **kwargs):
+        super().__init__(**kwargs)
+        self.input_method = input_method
+
     def build(self):
         global gui_instance
-        gui_instance = NexusGUI()
+        gui_instance = NexusGUI(input_method=self.input_method)
         return gui_instance
 
-def start_gui():
-    app = NexusApp()
+def start_gui(input_method="text"):
+    app = NexusApp(input_method=input_method)
     app.run()
 
 def update_gui_chat(sender, message):
@@ -245,3 +272,7 @@ def update_gui_chat(sender, message):
 def update_gui_status(new_status):
     if gui_instance:
         Clock.schedule_once(lambda dt: gui_instance.set_status(new_status))
+
+def set_user_input_callback(callback):
+    global process_user_input_callback
+    process_user_input_callback = callback

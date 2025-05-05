@@ -85,11 +85,11 @@ def handle_core_command(cmd, args, ctx):
             temperature = get_temperature()
             logger.info("[system] Estado consultado por el usuario")
             return (
-                f"🧠 Modo: {ctx.get_mode()}\n"
-                f"🌍 Idioma: {ctx.get_lang()}\n"
-                f"⚙️ Núcleo IA: {ctx.get_provider()}\n"
-                f"🌡️ Temperatura: {temperature}\n"
-                f"🕓 Hora: {datetime.now().strftime('%H:%M:%S')}"
+                f"Modo: {ctx.get_mode()}\n"
+                f"Idioma: {ctx.get_lang()}\n"
+                f"Núcleo IA: {ctx.get_provider()}\n"
+                f"Temperatura: {temperature}\n"
+                f"Hora: {datetime.now().strftime('%H:%M:%S')}"
             )
 
     elif cmd == "/reiniciar":
@@ -99,18 +99,18 @@ def handle_core_command(cmd, args, ctx):
             return get_text("reiniciar", lang)
 
     elif cmd == "/modos":
-        return f"🧠 {get_text('available_modes', lang)}\n" + "\n".join(f"• {m}" for m in VALID_MODES)
+        return f"{get_text('available_modes', lang)}\n" + "\n".join(f"• {m}" for m in VALID_MODES)
     
     # Nuevo comando: /entrada
     elif cmd == "/entrada":
         if not args:
-            return f"🎤 Métodos de entrada disponibles: {', '.join(VALID_INPUT_METHODS)}"
+            return f"Métodos de entrada disponibles: {', '.join(VALID_INPUT_METHODS)}"
         new_input_method = args[0].lower()
         if new_input_method not in VALID_INPUT_METHODS:
-            return f"❌ Método de entrada desconocido '{new_input_method}'. Opciones válidas: {', '.join(VALID_INPUT_METHODS)}"
+            return f"Método de entrada desconocido '{new_input_method}'. Opciones válidas: {', '.join(VALID_INPUT_METHODS)}"
         save_input_method_to_config(new_input_method)
         logger.info(f"[config] Input method changed to '{new_input_method}'")
-        return f"✅ Método de entrada cambiado a '{new_input_method}'. Reinicia NEXUS-X Core para aplicar cambios."
+        return f"Método de entrada cambiado a '{new_input_method}'. Reinicia NEXUS-X Core para aplicar cambios."
 
     return None  # No comando core
 
