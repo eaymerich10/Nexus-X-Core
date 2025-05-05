@@ -1,20 +1,22 @@
 import platform
+import random
+import sys
+from datetime import datetime
+
 from kivy.app import App
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.label import Label
-from kivy.uix.textinput import TextInput
-from kivy.uix.button import Button
-from kivy.uix.popup import Popup
 from kivy.clock import Clock
-from kivy.properties import StringProperty
 from kivy.core.window import Window
 from kivy.graphics import Color, Rectangle, Line
-from datetime import datetime
-import sys
+from kivy.properties import StringProperty
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.button import Button
+from kivy.uix.label import Label
+from kivy.uix.popup import Popup
+from kivy.uix.textinput import TextInput
 
 # GLOBAL
 gui_instance = None
-process_user_input_callback = None  # será enganchado externamente
+process_user_input_callback = None  # este será enganchado por core.py
 
 if platform.machine() == 'x86_64':
     FONT_PATH = '/usr/share/fonts/truetype/ubuntu/UbuntuMono[wght].ttf'
@@ -42,41 +44,54 @@ class NexusGUI(BoxLayout):
             Color(0.3, 0.8, 1, 1)
             self.top_line = Line(points=[self.x, self.top, self.right, self.top], width=1.2)
 
+        # Define themes
+        self.themes = {
+            "azul": (0.3, 0.8, 1, 1),
+            "verde": (0.4, 1, 0.4, 1),
+            "purpura": (0.8, 0.3, 1, 1),
+            "rojo": (1, 0.4, 0.4, 1)
+        }
+        self.current_theme = "azul"
+        self.apply_theme(self.current_theme)
+
+        # Top bar
         top_bar = BoxLayout(orientation='horizontal', size_hint=(1, 0.05))
         self.system_label = Label(
             text="NEXUS-X SYSTEM",
             font_size=14,
             font_name=FONT_PATH,
-            color=(0.3, 0.8, 1, 1),
+            color=self.themes[self.current_theme],
             halign='left', valign='middle'
         )
         self.time_label = Label(
             text=self.get_current_time(),
             font_size=14,
             font_name=FONT_PATH,
-            color=(0.3, 0.8, 1, 1),
+            color=self.themes[self.current_theme],
             halign='right', valign='middle'
         )
         top_bar.add_widget(self.system_label)
         top_bar.add_widget(self.time_label)
         self.add_widget(top_bar)
 
+        # Chat display
         self.chat_area = TextInput(
             text=self.chat_log,
             readonly=True,
             font_size=14,
             font_name=FONT_PATH,
-            foreground_color=(0.3, 0.8, 1, 1),
+            foreground_color=self.themes[self.current_theme],
             background_color=(0, 0, 0, 1),
-            size_hint=(1, 0.75),
+            size_hint=(1, 0.7),
             padding=[10, 10, 10, 10],
             cursor_blink=False
         )
         self.add_widget(self.chat_area)
 
+        # Optional text input if in text mode
         if input_method == "text":
             self.input_field = TextInput(
-                hint_text="Escribe aquí...",
+                hint_text="Escribe tu comando aquí...",
                 multiline=False,
                 font_size=14,
                 font_name=FONT_PATH,
@@ -88,7 +103,9 @@ class NexusGUI(BoxLayout):
             )
             self.input_field.bind(on_text_validate=self.on_enter_pressed)
             self.add_widget(self.input_field)
+            Clock.schedule_interval(self.animate_cursor, 0.5)
 
+        # Bottom bar
         self.bottom_bar = BoxLayout(orientation='horizontal', size_hint=(1, 0.1), spacing=10)
 
         command_button = Button(
@@ -97,11 +114,23 @@ class NexusGUI(BoxLayout):
             font_name=FONT_PATH,
             background_normal='',
             background_color=(0, 0, 0, 1),
-            color=(0.3, 0.8, 1, 1),
+            color=self.themes[self.current_theme],
             size_hint=(0.2, 1),
             border=(10, 10, 10, 10)
         )
         command_button.bind(on_release=self.show_command_popup)
+
+        theme_button = Button(
+            text="Tema",
+            font_size=12,
+            font_name=FONT_PATH,
+            background_normal='',
+            background_color=(0, 0, 0, 1),
+            color=self.themes[self.current_theme],
+            size_hint=(0.2, 1),
+            border=(10, 10, 10, 10)
+        )
+        theme_button.bind(on_release=lambda x: self.switch_theme())
 
         self.status_label = Label(
             text=f"Estado: {self.status}",
@@ -109,7 +138,7 @@ class NexusGUI(BoxLayout):
             font_name=FONT_PATH,
             color=(1, 0.4, 0.4, 1),
             halign='center', valign='middle',
-            size_hint=(0.6, 1)
+            size_hint=(0.4, 1)
         )
         self.status_label.bind(size=self.status_label.setter('text_size'))
 
@@ -126,6 +155,7 @@ class NexusGUI(BoxLayout):
         shutdown_btn.bind(on_release=self.confirm_shutdown)
 
         self.bottom_bar.add_widget(command_button)
+        self.bottom_bar.add_widget(theme_button)
         self.bottom_bar.add_widget(self.status_label)
         self.bottom_bar.add_widget(shutdown_btn)
         self.add_widget(self.bottom_bar)
@@ -154,6 +184,15 @@ class NexusGUI(BoxLayout):
         self.status_label.text = f"Estado: {self.status}"
 
     def blink_status(self, dt):
+        if random.random() < 0.1:  # 10% glitch
+            glitch_text = list(self.status_label.text)
+            if len(glitch_text) > 0:
+                glitch_index = random.randint(0, len(glitch_text) - 1)
+                glitch_text[glitch_index] = random.choice(['▒', '▓', '█'])
+                self.status_label.text = ''.join(glitch_text)
+        else:
+            self.status_label.text = f"Estado: {self.status}"
+
         if self.status_label.color[3] == 1:
             self.status_label.color = (1, 0.4, 0.4, 0.6)
         else:
@@ -169,7 +208,7 @@ class NexusGUI(BoxLayout):
                 font_name=FONT_PATH,
                 background_normal='',
                 background_color=(0, 0, 0, 1),
-                color=(0.3, 0.8, 1, 1),
+                color=self.themes[self.current_theme],
                 size_hint_y=None, height=30,
                 border=(10, 10, 10, 10)
             )
@@ -181,7 +220,7 @@ class NexusGUI(BoxLayout):
             content=content,
             size_hint=(0.4, 0.6),
             background_color=(0, 0, 0, 1),
-            separator_color=(0.3, 0.8, 1, 1),
+            separator_color=self.themes[self.current_theme],
         )
         popup.open()
 
@@ -208,7 +247,7 @@ class NexusGUI(BoxLayout):
             font_name=FONT_PATH,
             background_normal='',
             background_color=(0, 0, 0, 1),
-            color=(0.3, 0.8, 1, 1)
+            color=self.themes[self.current_theme]
         )
         button_bar.add_widget(yes_btn)
         button_bar.add_widget(no_btn)
@@ -250,6 +289,27 @@ class NexusGUI(BoxLayout):
         if user_input and process_user_input_callback:
             instance.text = ""
             process_user_input_callback(user_input)
+
+    def animate_cursor(self, dt):
+        if hasattr(self, 'input_field'):
+            current_color = self.input_field.cursor_color
+            if current_color == [1, 1, 1, 1]:
+                self.input_field.cursor_color = [0.3, 0.8, 1, 1]
+            else:
+                self.input_field.cursor_color = [1, 1, 1, 1]
+                
+    def apply_theme(self, theme_name):
+        color = self.themes.get(theme_name, (0.3, 0.8, 1, 1))
+        if hasattr(self, 'system_label'):
+            self.system_label.color = color
+        if hasattr(self, 'time_label'):
+            self.time_label.color = color
+        if hasattr(self, 'chat_area'):
+            self.chat_area.foreground_color = color
+
+    def switch_theme(self):
+        next_theme = random.choice(list(self.themes.keys()))
+        self.apply_theme(next_theme)
 
 class NexusApp(App):
     def __init__(self, input_method="text", **kwargs):
