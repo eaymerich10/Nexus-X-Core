@@ -2,6 +2,7 @@ from datetime import datetime
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
+from kivy.uix.button import Button
 from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle, Line
 import sys
@@ -12,13 +13,15 @@ from .themes import switch_theme
 from .animations import animate_cursor, blink_status
 from .widgets import FancyButton
 
+# Importa el callback global correctamente SIN romper los imports
+import gui
+
 class NexusGUI(BoxLayout):
     def __init__(self, input_method="text", **kwargs):
         super().__init__(**kwargs)
         self.chat_log = ""
         self.status = "Esperando..."
         self.current_theme = "azul"
-        self.user_input_callback = None  # ← importante para el callback
 
         self.orientation = 'vertical'
         self.padding = 20
@@ -41,9 +44,6 @@ class NexusGUI(BoxLayout):
 
         Clock.schedule_interval(lambda dt: blink_status(self, dt), 0.5)
         Clock.schedule_interval(self.update_time, 1)
-
-    def set_user_input_callback(self, callback):
-        self.user_input_callback = callback
 
     def update_graphics(self, *args):
         self.rect.size = self.size
@@ -100,12 +100,8 @@ class NexusGUI(BoxLayout):
         )
         self.status_label.bind(size=self.status_label.setter('text_size'))
 
-        shutdown_btn = FancyButton(
-            text="Apagar",
-            text_color=[1, 0.4, 0.4, 1],  # rojo
-            hover_color=[0.5, 0, 0, 1],   # rojo oscuro al pasar
-            text_hover_color=[1, 1, 1, 1]  # blanco al pasar
-        )
+        shutdown_btn = FancyButton(text="Apagar")
+        shutdown_btn.color = (1, 0.4, 0.4, 1)  # Texto rojo para destacar apagado
         shutdown_btn.bind(on_release=lambda x: confirm_shutdown(self))
 
         bottom_bar.add_widget(cmd_btn)
@@ -132,9 +128,9 @@ class NexusGUI(BoxLayout):
     
     def on_enter_pressed(self, instance):
         user_input = instance.text.strip()
-        if user_input and self.user_input_callback:
+        if user_input and gui.process_user_input_callback:
             instance.text = ""
-            self.user_input_callback(user_input)
+            gui.process_user_input_callback(user_input)
     
     def start_shutdown_sequence(self, popup):
         popup.dismiss()
