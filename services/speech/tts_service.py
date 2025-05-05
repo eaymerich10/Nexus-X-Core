@@ -12,7 +12,7 @@ class TTSService:
         check_tts_model(model_path)
 
         # Notificar en la GUI que ya está listo
-        from gui.nexus_gui import update_gui_status
+        from gui import update_gui_status
         update_gui_status("Cargando modelo TTS...")
 
         self.tts = TTS(model_name="tts_models/es/css10/vits", progress_bar=False, gpu=False)

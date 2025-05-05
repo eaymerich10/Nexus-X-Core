@@ -15,7 +15,7 @@ from services.speech.speech_service import SpeechService
 from services.speech.tts_service import TTSService
 from assistant.utils.constants import VOICE_COMMAND_PATTERNS, FIXED_COMMANDS, ACTIVATION_PHRASES
 
-from gui.nexus_gui import update_gui_chat, update_gui_status, set_user_input_callback
+from gui import update_gui_chat, update_gui_status, set_user_input_callback
 
 def get_random_activation_phrase():
     return random.choice(ACTIVATION_PHRASES)
@@ -46,7 +46,7 @@ def stop_and_reopen_audio(pa, porcupine, audio_stream):
         format=pyaudio.paInt16, input=True,
         frames_per_buffer=porcupine.frame_length
     )
-    print("🎙 Micrófono reabierto y listo para grabar.")
+    print("Micrófono reabierto y listo para grabar.")
     update_gui_status("Micrófono reabierto")
     return new_stream
 
@@ -65,7 +65,6 @@ def main_loop(mode=None, lang=None):
     def handle_user_input(user_input):
         if not user_input:
             return
-
         update_gui_chat("Usuario", user_input)
 
         if user_input.lower() in ["exit", "quit"]:
@@ -114,7 +113,7 @@ def main_loop(mode=None, lang=None):
                 tts_service.speak(preprocess_response(result))
             update_gui_status("Esperando...")
 
-    # Vínculo para que GUI pueda mandar input
+    # Conecta el callback para entrada desde GUI
     set_user_input_callback(handle_user_input)
 
     if input_method == "voice":
@@ -180,7 +179,7 @@ def main_loop(mode=None, lang=None):
                 handle_user_input(user_input)
         else:
             while True:
-                time.sleep(0.1)  # mantiene bucle para permitir input GUI
+                time.sleep(0.1)  # mantiene bucle vivo para la GUI
 
     except KeyboardInterrupt:
         print("Interrumpido por el usuario.")

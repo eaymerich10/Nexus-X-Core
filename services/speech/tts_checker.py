@@ -1,7 +1,7 @@
 import os
 import json
 import shutil
-from gui.nexus_gui import update_gui_status
+from gui import update_gui_status
 
 def check_tts_model(model_path):
     config_file = os.path.join(model_path, 'config.json')
