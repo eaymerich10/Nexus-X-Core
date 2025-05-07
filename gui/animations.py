@@ -1,21 +1,33 @@
+from kivy.animation import Animation
+from kivy.graphics import Color, Ellipse
 import random
 
 def animate_cursor(gui, dt):
-    if hasattr(gui, 'input_field'):
-        current_color = gui.input_field.cursor_color
-        gui.input_field.cursor_color = [0.3, 0.8, 1, 1] if current_color == [1, 1, 1, 1] else [1, 1, 1, 1]
-
-def blink_status(gui, dt):
-    if random.random() < 0.1:  # 10% glitch chance
-        glitch_text = list(gui.status_label.text)
-        if glitch_text:
-            glitch_index = random.randint(0, len(glitch_text) - 1)
-            glitch_text[glitch_index] = random.choice(['▒', '▓', '█'])
-            gui.status_label.text = ''.join(glitch_text)
+    if hasattr(gui, 'input_field') and gui.input_field.focus:
+        gui.input_field.cursor_color = (0.7, 1, 0.7, 1)
     else:
-        gui.status_label.text = f"Estado: {gui.status}"
+        gui.input_field.cursor_color = (0.5, 0.5, 0.5, 1)
 
-    if gui.status_label.color[3] == 1:
-        gui.status_label.color = (1, 0.4, 0.4, 0.6)
-    else:
-        gui.status_label.color = (1, 0.4, 0.4, 1)
+def fade_in(widget):
+    anim = Animation(opacity=1, duration=0.5)
+    anim.start(widget)
+
+def update_particles(gui):
+    gui.canvas.before.clear()
+    with gui.canvas.before:
+        Color(0.08, 0.08, 0.08, 1)  # fondo oscuro
+        gui.bg_rect = gui.bg_rect  # mantiene fondo
+
+        Color(0.3, 0.8, 1, 0.3)  # color azul translúcido
+
+        for particle in gui.particles:
+            particle['x'] += particle['dx']
+            particle['y'] += particle['dy']
+
+            # rebote en los bordes
+            if particle['x'] < 0 or particle['x'] > gui.width:
+                particle['dx'] *= -1
+            if particle['y'] < 0 or particle['y'] > gui.height:
+                particle['dy'] *= -1
+
+            Ellipse(pos=(particle['x'], particle['y']), size=(particle['size'], particle['size']))
