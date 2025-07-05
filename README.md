@@ -1,31 +1,30 @@
 # NEXUS-X Core
 
-NEXUS-X Core is a local, voice-enabled AI assistant built to run on a Raspberry Pi (or Ubuntu) as the physical extension of the NEXUS-X Telegram bot. It uses GPT-4 for natural conversation and is designed with a modular architecture, making it easy to expand with voice commands, integrations, or new AI providers.
+**NEXUS-X Core** is a local, voice-enabled AI assistant designed to run on a **Raspberry Pi** (or any Linux system like Ubuntu).  
+It serves as the physical extension of the NEXUS-X Telegram bot, powered by **GPT-4** for natural conversations.  
+The assistant is built with a modular architecture, making it easy to extend with new commands, services, or AI providers.
 
 ---
 
 ## 🌟 Features
 
-- ✅ **GPT-powered chat** with contextual memory
-- ✅ **Command system** (/time, /hello, /estado, /reiniciar, etc.)
-- ✅ **Wake word activation** (via Picovoice Porcupine)
-- ✅ **Voice input** (Whisper) and **voice output** (TTS)
-- ✅ **Modular design** (easily plug in new services or commands)
-- ✅ **Multi-language support** (default language: Spanish, but configurable)
-- ✅ **Optimized for Raspberry Pi OS Lite** (64-bit), but works on Ubuntu/Linux x86_64 too
+- ✅ **GPT-4 powered chat** with contextual memory  
+- ✅ **Voice and text commands** (`/time`, `/hello`, `/estado`, `/reiniciar`, etc.)  
+- ✅ **Wake word activation** (via Picovoice Porcupine)  
+- ✅ **Voice input** (Whisper CLI) and **voice output** (TTS: Coqui, Google, etc.)  
+- ✅ **Modular architecture** – plug in new services easily  
+- ✅ **Multi-language support** (default: Spanish, configurable)  
+- ✅ **Optimized for Raspberry Pi OS Lite (64-bit)** — also runs on Ubuntu x86_64  
 
 ---
 
 ## 📦 Requirements
 
-- **Python**: 3.11+
-- **Installed tools**: `sox`, `aplay`
+- **Python**: 3.11+  
+- **System packages**:
+  - `sox`, `aplay`, `alsa-utils`, `portaudio19-dev`
 - **Python libraries**:
-  - `openai`
-  - `python-dotenv`
-  - `pvporcupine`
-  - `pyaudio`
-  - `TTS`
+  - `openai`, `python-dotenv`, `pvporcupine`, `pyaudio`, `TTS`
 
 ---
 
@@ -36,55 +35,124 @@ NEXUS-X Core is a local, voice-enabled AI assistant built to run on a Raspberry 
 git clone https://github.com/your-username/nexus-x-core.git
 cd nexus-x-core
 
-# Create virtual environment
+# Create and activate virtual environment
 python3 -m venv venv
 source venv/bin/activate
 
 # Install Python dependencies
 pip install -r requirements.txt
 
-# Install system dependencies (if missing)
+# Install system dependencies
 sudo apt install sox alsa-utils portaudio19-dev
 
-# Prepare the .env file
+# Copy the environment configuration template
 cp .env.example .env
 ```
 
-Edit `.env` and add:
+Edit `.env` and fill in the following variables:
+
 ```env
 OPENAI_API_KEY=your_openai_api_key
-ACCESS_KEY_UBUNTU=your_porcupine_access_key (if on Ubuntu)
-ACCESS_KEY_RPI=your_porcupine_access_key (if on Raspberry Pi)
-KEYWORD_PATH_UBUNTU=path_to_your_wakeword.ppn
-KEYWORD_PATH_RPI=path_to_your_wakeword.ppn
+
+# Picovoice Porcupine credentials
+ACCESS_KEY_UBUNTU=your_porcupine_access_key
+ACCESS_KEY_RPI=your_porcupine_access_key
+
+# Wake word paths
+KEYWORD_PATH_UBUNTU=path_to_wakeword.ppn
+KEYWORD_PATH_RPI=path_to_wakeword.ppn
 ```
 
 ---
 
-## 🚀 Run the Assistant
+## 🚀 Running the Assistant
 
 ```bash
-python scripts/run.py
+python -m scripts.run
 ```
+
+Once running, the assistant will listen for the wake word, process speech, and respond aloud.
 
 ---
 
 ## 💡 Example Commands
 
-In text or voice, you can use:
+Whether via **text or voice**, you can use:
 
-- `/hello` → Greets you
-- `/time` → Tells current time
-- `/modo default` → Changes mode
-- `/lang es` → Switches language
-- `/recordar something` → Adds a reminder
-- `/ver` → Lists reminders
-- `/borrar 1` → Deletes reminder #1
+- `/hello` – Greets you  
+- `/time` – Tells the current time  
+- `/modo default` – Switches interaction mode  
+- `/lang es` – Changes language to Spanish  
+- `/recordar algo` – Adds a reminder  
+- `/ver` – Lists active reminders  
+- `/borrar 1` – Deletes reminder #1  
+
+---
+
+## 📁 Project Structure
+
+```bash
+nexus-x-core/
+├── assistant/            # Core assistant logic and context
+│   ├── commands/         # Command handlers
+│   ├── utils/            # Helpers and configuration
+├── services/             # External services (TTS, memory, Supabase, etc.)
+├── scripts/              # Runner scripts
+├── .env.example          # Environment config template
+├── install.sh            # Install as systemd user service
+├── setup.sh              # One-time installation script
+└── README.md
+```
 
 ---
 
 ## 🛡️ Notes
 
-- For best performance, use the Whisper CLI compiled for your platform.
-- The system uses a rotating set of sci-fi activation responses (inspired by Blade Runner) when the wake word is detected.
+- For best performance, compile and use the [Whisper CLI](https://github.com/ggerganov/whisper.cpp) appropriate for your platform.  
+- Activation responses use a rotating set of sci-fi phrases inspired by *Blade Runner*.  
+- All user interaction is designed to be modular and easily extendable.
 
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License**. See the [LICENSE](./LICENSE) file for details.
+
+---
+
+## 🤝 Contributions
+
+Want to improve NEXUS-X Core? See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines. Feedback, issues and pull requests are welcome!
+
+
+---
+
+## 🔧 Setup scripts (optional)
+
+This project includes two helper scripts for convenience:
+
+### `setup.sh` – First-time setup
+Use this to prepare your Raspberry Pi or Ubuntu environment (installs Python, dependencies, etc.)
+
+```bash
+chmod +x setup.sh
+./setup.sh
+```
+
+### `install.sh` – Register as systemd user service
+This will install NEXUS-X Core as a background service that auto-starts on boot (user-level, not root).
+
+```bash
+chmod +x install.sh
+./install.sh
+
+# Check status and logs
+systemctl --user status nexus-x-core
+journalctl --user -u nexus-x-core -f
+```
+
+To uninstall the service and clean up:
+
+```bash
+./uninstall.sh
+```
