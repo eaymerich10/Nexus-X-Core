@@ -8,6 +8,8 @@ The assistant is built with a modular architecture, making it easy to extend wit
 
 ## 🌟 Features
 
+- ✅ **Graphical interface built with Kivy** for touch or screen-based control (Raspberry Pi friendly)
+
 - ✅ **GPT-4 powered chat** with contextual memory  
 - ✅ **Voice and text commands** (`/time`, `/hello`, `/estado`, `/reiniciar`, etc.)  
 - ✅ **Wake word activation** (via Picovoice Porcupine)  
@@ -72,22 +74,21 @@ python -m scripts.run
 ```
 
 Once running, the assistant will listen for the wake word, process speech, and respond aloud.
-
 ---
 
-## 💡 Example Commands
+## 🖥️ Graphical Interface
 
-Whether via **text or voice**, you can use:
+NEXUS-X Core includes a full graphical interface built with **Kivy**, optimized for touchscreens and embedded displays. It allows users to interact with the assistant in a more intuitive way, including:
+- Input field and conversation history
+- Visual feedback of processing and output
+- Simple layout adapted to Raspberry Pi or Ubuntu
 
-- `/hello` – Greets you  
-- `/time` – Tells the current time  
-- `/modo default` – Switches interaction mode  
-- `/lang es` – Changes language to Spanish  
-- `/recordar algo` – Adds a reminder  
-- `/ver` – Lists active reminders  
-- `/borrar 1` – Deletes reminder #1  
+To launch the assistant with GUI support:
 
----
+```bash
+python -m scripts.run
+```
+
 
 ## 📁 Project Structure
 
