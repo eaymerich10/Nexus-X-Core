@@ -10,7 +10,7 @@ def ask_openai(
     history,
     user_input,
     lang="es",
-    model="gpt-4o-mini",
+    model="gpt-4o",
     mode="default",
     max_tokens=100,
     extra_context=None,
